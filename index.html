@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -52,9 +52,8 @@
       <h1 class="text-center text-2xl font-black mb-1">CRM Pro</h1>
       <p class="text-center text-sm text-slate-400 mb-6">نسخة مجانية نظيفة تعمل من GitHub Pages</p>
       <div class="grid gap-3">
-        <input id="loginUser" class="input" placeholder="اسم المستخدم" value="admin">
-        <input id="loginPass" class="input" placeholder="كلمة المرور" type="password" value="admin">
-        <button class="btn btn-primary w-full" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
+      <input id="username" type="email">
+      <input id="password" type="password">        <button class="btn btn-primary w-full" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
         <p class="text-xs text-slate-500 text-center">الدخول الافتراضي: admin / admin — يمكنك تغييره من الإعدادات لاحقًا</p>
       </div>
     </div>
@@ -397,26 +396,12 @@ function registerUser(email, password) {
     });
 }
 
-function loginUser(email, password) {
+function login() {
 
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => {
-      alert("تم تسجيل الدخول");
-      location.reload();
-    })
-    .catch((error) => {
-      alert(error.message);
-    });
+  const email = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-}
-
-function logoutUser() {
-
-  auth.signOut()
-    .then(() => {
-      alert("تم تسجيل الخروج");
-      location.reload();
-    });
+  loginUser(email, password);
 
 }
 
