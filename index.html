@@ -53,8 +53,12 @@
       <p class="text-center text-sm text-slate-400 mb-6">نسخة مجانية نظيفة تعمل من GitHub Pages</p>
       <div class="grid gap-3">
       <input id="username" type="email">
-      <input id="password" type="password">        <button class="btn btn-primary w-full" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
-        <p class="text-xs text-slate-500 text-center">الدخول الافتراضي: admin / admin — يمكنك تغييره من الإعدادات لاحقًا</p>
+      <input id="password" type="password">        
+      <button class="btn btn-primary w-full" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
+       <button class="btn btn-secondary w-full mt-2" onclick="register()">
+                   إنشاء حساب
+       </button>
+      <p class="text-xs text-slate-500 text-center">الدخول الافتراضي: admin / admin — يمكنك تغييره من الإعدادات لاحقًا</p>
       </div>
     </div>
   </div>
@@ -65,9 +69,9 @@
       <input id="search" class="input max-w-md mr-auto" placeholder="بحث في العملاء والصفقات..." oninput="render()">
       <button class="btn btn-soft" onclick="exportJSON()"><i class="fa-solid fa-download"></i><span class="hidden md:inline">تصدير</span></button>
       <label class="btn btn-soft cursor-pointer"><i class="fa-solid fa-upload"></i><span class="hidden md:inline">استيراد</span><input type="file" accept=".json" class="hidden" onchange="importJSON(event)"></label>
-      <button class="btn btn-danger" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i></button>
-    </header>
-
+      <button class="btn btn-danger" onclick="logoutUser()">
+      <i class="fa-solid fa-sign-out-alt"></i>
+      </button>
     <main class="layout grid grid-cols-[250px_1fr] gap-4 p-4">
       <aside class="sidebar card p-3 h-fit">
         <nav id="nav" class="nav grid gap-1"></nav>
@@ -404,7 +408,14 @@ function login() {
   loginUser(email, password);
 
 }
+function register() {
 
+  const email = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  registerUser(email, password);
+
+}
 auth.onAuthStateChanged((user) => {
 
   if (user) {
