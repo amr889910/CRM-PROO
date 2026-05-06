@@ -152,7 +152,7 @@
       authDomain: "crm-proo.firebaseapp.com",
       databaseURL: "https://crm-proo-default-rtdb.firebaseio.com",
       projectId: "crm-proo",
-      storageBucket: "crm-proo.firebasestorage.app",
+      storageBucket: "crm-proo.appspot.com",
       messagingSenderId: "956449284026",
       appId: "1:956449284026:web:3034599054b281c7104783"
     };
@@ -323,6 +323,8 @@ function login(){
         'auth/weak-password': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
         'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت'
       };
+      return messages[code] || error.message || 'خطأ غير معروف';
+     }
 
     function buildNav(){
       document.getElementById('nav').innerHTML = pages.map(p => `
@@ -751,9 +753,10 @@ function login(){
       }[ch]));
     }
 
-    function escapeAttr(value){
-      return escapeHTML(value).replace(/'/g, '&#039;');
-    }
+function escapeAttr(value){
+  return escapeHTML(value).replace(/'/g, '&#039;');
+}
+
   </script>
-</body>
-</html>
+  </body>
+  </html>
