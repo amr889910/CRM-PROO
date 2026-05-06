@@ -355,5 +355,44 @@ function escapeAttr(value){ return escapeHTML(value).replace(/'/g, '&#039;'); }
 
 boot();
 </script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyByWvUx4RDUyYKwJH91g1QxpCdcVmpEE5I",
+  authDomain: "crm-proo.firebaseapp.com",
+  databaseURL: "https://crm-proo-default-rtdb.firebaseio.com",
+  projectId: "crm-proo",
+  storageBucket: "crm-proo.firebasestorage.app",
+  messagingSenderId: "956449284026",
+  appId: "1:956449284026:web:3034599054b281c7104783",
+  measurementId: "G-RED70R3GV2"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+
+function saveCustomer(name, phone) {
+  const id = Date.now();
+
+  db.ref("customers/" + id).set({
+    name: name,
+    phone: phone
+  });
+
+  alert("تم حفظ العميل");
+}
+
+function loadCustomers() {
+  db.ref("customers").on("value", (snapshot) => {
+    console.log(snapshot.val());
+  });
+}
+
+loadCustomers();
+</script>
 </body>
 </html>
