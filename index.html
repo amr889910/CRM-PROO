@@ -483,9 +483,19 @@ function login(){
                 <tr>
                   ${config.keys.map(k => `<td>${cell(type,k,row[k])}</td>`).join('')}
                   <td>
-                    <button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')">
-                      <i class="fa-solid fa-pen"></i>
-                    </button>
+${type === 'contacts' ? `
+  <button class="btn btn-soft !p-2" onclick="openWhatsApp('${row.phone}')">
+    <i class="fa-brands fa-whatsapp"></i>
+  </button>
+` : ''}
+
+    <button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')">
+  <i class="fa-solid fa-pen"></i>
+</button>
+
+<button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')">
+  <i class="fa-solid fa-trash"></i>
+</button>                    </button>
                     <button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')">
                       <i class="fa-solid fa-trash"></i>
                     </button>
@@ -755,6 +765,23 @@ function login(){
 
 function escapeAttr(value){
   return escapeHTML(value).replace(/'/g, '&#039;');
+}
+function openWhatsApp(phone){
+  if(!phone){
+    toast('رقم الهاتف غير موجود', 'error');
+    return;
+  }
+
+  let cleanPhone = String(phone).replace(/\D/g, '');
+
+  if(cleanPhone.startsWith('0')){
+    cleanPhone = '2' + cleanPhone;
+  }
+
+  const message = encodeURIComponent('مرحبًا، نتواصل معك من CRM-PROO');
+  const url = `https://wa.me/${cleanPhone}?text=${message}`;
+
+  window.open(url, '_blank');
 }
 
   </script>
