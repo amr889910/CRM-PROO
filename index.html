@@ -1,40 +1,49 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM Pro - نسخة نظيفة</title>
+  <title>CRM-PROO</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Cairo', sans-serif; background:#080e1a; color:#dce4f0; min-height:100vh; }
     input, select, textarea, button { font-family: 'Cairo', sans-serif; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background:#1b2d4f; border-radius:8px; }
+
     .card { background:#0c1527; border:1px solid rgba(80,110,150,.16); border-radius:16px; }
     .input { width:100%; background:#111d35; border:1px solid rgba(80,110,150,.18); border-radius:12px; padding:10px 12px; color:#dce4f0; outline:none; }
     .input:focus { border-color:#2d9cdb; box-shadow:0 0 0 3px rgba(45,156,219,.12); }
-    .btn { border:0; border-radius:12px; padding:10px 14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; justify-content:center; transition:.15s; }
+
+    .btn { border:0; border-radius:12px; padding:10px 14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; justify-content:center; transition:.15s; cursor:pointer; }
     .btn:active { transform:scale(.98); }
     .btn-primary { background:#1a7ab5; color:white; }
     .btn-primary:hover { background:#2d9cdb; }
+    .btn-secondary { background:#17233d; color:#dce4f0; border:1px solid rgba(80,110,150,.20); }
     .btn-soft { background:#111d35; color:#b8c6d9; border:1px solid rgba(80,110,150,.14); }
     .btn-danger { background:rgba(231,76,60,.12); color:#ff7b72; }
-    .nav-item { color:#8190a8; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; }
+
+    .nav-item { color:#8190a8; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; width:100%; }
     .nav-item.active, .nav-item:hover { background:rgba(45,156,219,.12); color:#2d9cdb; }
+
     .badge { font-size:11px; border-radius:20px; padding:3px 9px; font-weight:800; }
     .status-new { background:rgba(45,156,219,.12); color:#2d9cdb; }
     .status-progress { background:rgba(226,176,7,.13); color:#e2b007; }
     .status-done { background:rgba(39,174,96,.13); color:#27ae60; }
     .status-lost { background:rgba(231,76,60,.13); color:#e74c3c; }
+
     .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.62); z-index:50; align-items:center; justify-content:center; padding:16px; }
     .modal.show { display:flex; }
+
     .table { width:100%; border-collapse:collapse; min-width:760px; }
     .table th { color:#72819a; font-size:12px; background:#111d35; text-align:right; padding:12px; }
     .table td { border-top:1px solid rgba(80,110,150,.1); padding:12px; font-size:13px; }
+
     @media (max-width: 768px) {
       .layout { grid-template-columns:1fr !important; }
       .sidebar { position:sticky; top:0; z-index:20; border-radius:0 0 18px 18px; }
@@ -43,39 +52,71 @@
     }
   </style>
 </head>
+
 <body>
-  <div id="auth" class="min-h-screen flex items-center justify-center p-4">
+
+  <!-- Login / Register Screen -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 shadow-2xl">
       <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white text-2xl" style="background:linear-gradient(135deg,#2d9cdb,#8e44ad)">
         <i class="fa-solid fa-cube"></i>
       </div>
-      <h1 class="text-center text-2xl font-black mb-1">CRM Pro</h1>
-      <p class="text-center text-sm text-slate-400 mb-6">نسخة مجانية نظيفة تعمل من GitHub Pages</p>
+
+      <h1 class="text-center text-2xl font-black mb-1">CRM-PROO</h1>
+      <p class="text-center text-sm text-slate-400 mb-6">تسجيل دخول حقيقي باستخدام Firebase</p>
+
       <div class="grid gap-3">
-      <input id="username" type="email">
-      <input id="password" type="password">        
-      <button class="btn btn-primary w-full" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
-       <button class="btn btn-secondary w-full mt-2" onclick="register()">
-                   إنشاء حساب
-       </button>
-      <p class="text-xs text-slate-500 text-center">الدخول الافتراضي: admin / admin — يمكنك تغييره من الإعدادات لاحقًا</p>
+        <input id="username" class="input" type="email" placeholder="البريد الإلكتروني">
+        <input id="password" class="input" type="password" placeholder="كلمة المرور">
+
+        <button class="btn btn-primary w-full" onclick="login()">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          دخول
+        </button>
+
+        <button class="btn btn-secondary w-full" onclick="register()">
+          <i class="fa-solid fa-user-plus"></i>
+          إنشاء حساب
+        </button>
+
+        <p class="text-xs text-slate-500 text-center">
+          استخدم إيميل حقيقي مثل: test@example.com وكلمة مرور 6 أحرف أو أكثر
+        </p>
       </div>
     </div>
   </div>
 
+  <!-- App -->
   <div id="app" class="hidden">
     <header class="h-16 bg-[#0c1527] border-b border-slate-800 flex items-center gap-3 px-4 sticky top-0 z-30">
-      <div class="font-black text-lg text-[#2d9cdb] flex items-center gap-2"><i class="fa-solid fa-cube"></i> CRM Pro</div>
+      <div class="font-black text-lg text-[#2d9cdb] flex items-center gap-2">
+        <i class="fa-solid fa-cube"></i>
+        CRM-PROO
+      </div>
+
       <input id="search" class="input max-w-md mr-auto" placeholder="بحث في العملاء والصفقات..." oninput="render()">
-      <button class="btn btn-soft" onclick="exportJSON()"><i class="fa-solid fa-download"></i><span class="hidden md:inline">تصدير</span></button>
-      <label class="btn btn-soft cursor-pointer"><i class="fa-solid fa-upload"></i><span class="hidden md:inline">استيراد</span><input type="file" accept=".json" class="hidden" onchange="importJSON(event)"></label>
-      <button class="btn btn-danger" onclick="logoutUser()">
-      <i class="fa-solid fa-sign-out-alt"></i>
+
+      <button class="btn btn-soft" onclick="exportJSON()">
+        <i class="fa-solid fa-download"></i>
+        <span class="hidden md:inline">تصدير</span>
       </button>
+
+      <label class="btn btn-soft cursor-pointer">
+        <i class="fa-solid fa-upload"></i>
+        <span class="hidden md:inline">استيراد</span>
+        <input type="file" accept=".json" class="hidden" onchange="importJSON(event)">
+      </label>
+
+      <button class="btn btn-danger" onclick="logoutUser()" title="تسجيل خروج">
+        <i class="fa-solid fa-sign-out-alt"></i>
+      </button>
+    </header>
+
     <main class="layout grid grid-cols-[250px_1fr] gap-4 p-4">
       <aside class="sidebar card p-3 h-fit">
         <nav id="nav" class="nav grid gap-1"></nav>
       </aside>
+
       <section>
         <div id="toolbar" class="mb-4 flex flex-wrap gap-2 items-center"></div>
         <div id="content"></div>
@@ -83,349 +124,640 @@
     </main>
   </div>
 
+  <!-- Modal -->
   <div id="modal" class="modal">
     <div class="card w-full max-w-2xl max-h-[90vh] overflow-auto shadow-2xl">
       <div class="p-4 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-[#0c1527]">
         <h2 id="modalTitle" class="font-black text-lg"></h2>
-        <button class="btn btn-soft" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+        <button class="btn btn-soft" onclick="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
+
       <form id="modalBody" class="p-4 grid gap-3" onsubmit="saveForm(event)"></form>
     </div>
   </div>
 
   <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] grid gap-2"></div>
 
-<script>
-'use strict';
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-const STORE_KEY = 'crm_clean_v1';
-let currentPage = 'dashboard';
-let editing = null;
-let data = loadData();
+  <script>
+    'use strict';
 
-const pages = [
-  { id:'dashboard', label:'لوحة التحكم', icon:'fa-chart-pie' },
-  { id:'deals', label:'الصفقات', icon:'fa-handshake' },
-  { id:'contacts', label:'العملاء', icon:'fa-address-book' },
-  { id:'products', label:'المنتجات', icon:'fa-box-open' },
-  { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
-  { id:'settings', label:'الإعدادات', icon:'fa-gear' }
-];
+    const firebaseConfig = {
+      apiKey: "AIzaSyByWvUx4RDUyYKwJH91g1QxpCdcVmpEE5I",
+      authDomain: "crm-proo.firebaseapp.com",
+      databaseURL: "https://crm-proo-default-rtdb.firebaseio.com",
+      projectId: "crm-proo",
+      storageBucket: "crm-proo.firebasestorage.app",
+      messagingSenderId: "956449284026",
+      appId: "1:956449284026:web:3034599054b281c7104783"
+    };
 
-function defaults(){
-  return {
-    users: [{ username:'admin', password:'admin' }],
-    contacts: [
-      { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم' },
-      { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'' },
-      { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', notes:'' }
-    ],
-    deals: [
-      { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'' },
-      { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'' },
-      { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'' }
-    ],
-    products: [
-      { id: uid(), name:'باقة صيانة', sku:'SRV-001', category:'خدمات', price:5000, stock:50 },
-      { id: uid(), name:'نظام محتوى', sku:'SW-001', category:'برمجيات', price:25000, stock:10 },
-      { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999 }
-    ],
-    reps: [
-      { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5 },
-      { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4 }
-    ]
-  };
-}
+    firebase.initializeApp(firebaseConfig);
 
-function uid(){ return String(Date.now()) + Math.random().toString(16).slice(2); }
-function money(n){ return new Intl.NumberFormat('ar-EG').format(Number(n || 0)); }
-function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
-function loadData(){
-  try {
-    const saved = localStorage.getItem(STORE_KEY);
-    return saved ? JSON.parse(saved) : defaults();
-  } catch { return defaults(); }
-}
-function isLogged(){ return localStorage.getItem('crm_logged') === '1'; }
+    const db = firebase.database();
+    const auth = firebase.auth();
 
-function login(){
-  const username = document.getElementById('loginUser').value.trim();
-  const password = document.getElementById('loginPass').value;
-  const ok = data.users.some(u => u.username === username && u.password === password);
-  if(!ok) return toast('بيانات الدخول غير صحيحة', 'error');
-  localStorage.setItem('crm_logged', '1');
-  boot();
-}
-function logout(){ localStorage.removeItem('crm_logged'); boot(); }
+    const STORE_KEY = 'crm_proo_clean_v2';
 
-function boot(){
-  document.getElementById('auth').classList.toggle('hidden', isLogged());
-  document.getElementById('app').classList.toggle('hidden', !isLogged());
-  if(isLogged()) { buildNav(); render(); }
-}
+    let currentPage = 'dashboard';
+    let editing = null;
+    let currentFirebaseUser = null;
+    let data = loadData();
 
-function buildNav(){
-  document.getElementById('nav').innerHTML = pages.map(p => `
-    <button class="nav-item ${currentPage === p.id ? 'active' : ''}" onclick="go('${p.id}')">
-      <i class="fa-solid ${p.icon} w-5"></i><span>${p.label}</span>
-    </button>
-  `).join('');
-}
-function go(page){ currentPage = page; buildNav(); render(); }
+    const pages = [
+      { id:'dashboard', label:'لوحة التحكم', icon:'fa-chart-pie' },
+      { id:'deals', label:'الصفقات', icon:'fa-handshake' },
+      { id:'contacts', label:'العملاء', icon:'fa-address-book' },
+      { id:'products', label:'المنتجات', icon:'fa-box-open' },
+      { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
+      { id:'settings', label:'الإعدادات', icon:'fa-gear' }
+    ];
 
-function query(){ return document.getElementById('search')?.value.trim().toLowerCase() || ''; }
-function filterRows(rows, keys){
-  const q = query();
-  if(!q) return rows;
-  return rows.filter(row => keys.some(k => String(row[k] || '').toLowerCase().includes(q)));
-}
+    function defaults(){
+      return {
+        contacts: [
+          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم' },
+          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'' },
+          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', notes:'' }
+        ],
+        deals: [
+          { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'' },
+          { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'' },
+          { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'' }
+        ],
+        products: [
+          { id: uid(), name:'باقة صيانة', sku:'SRV-001', category:'خدمات', price:5000, stock:50 },
+          { id: uid(), name:'نظام محتوى', sku:'SW-001', category:'برمجيات', price:25000, stock:10 },
+          { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999 }
+        ],
+        reps: [
+          { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5 },
+          { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4 }
+        ]
+      };
+    }
 
-function render(){
-  const toolbar = document.getElementById('toolbar');
-  const content = document.getElementById('content');
-  const page = pages.find(p => p.id === currentPage);
-  toolbar.innerHTML = `<h1 class="text-2xl font-black ml-auto">${page.label}</h1>` + getToolbar();
-  content.innerHTML = getContent();
-}
+    function uid(){
+      return String(Date.now()) + Math.random().toString(16).slice(2);
+    }
 
-function getToolbar(){
-  if(currentPage === 'deals') return `<button class="btn btn-primary" onclick="openForm('deals')"><i class="fa-solid fa-plus"></i> صفقة</button>`;
-  if(currentPage === 'contacts') return `<button class="btn btn-primary" onclick="openForm('contacts')"><i class="fa-solid fa-plus"></i> عميل</button>`;
-  if(currentPage === 'products') return `<button class="btn btn-primary" onclick="openForm('products')"><i class="fa-solid fa-plus"></i> منتج</button>`;
-  if(currentPage === 'reps') return `<button class="btn btn-primary" onclick="openForm('reps')"><i class="fa-solid fa-plus"></i> مندوب</button>`;
-  return '';
-}
+    function money(n){
+      return new Intl.NumberFormat('ar-EG').format(Number(n || 0));
+    }
 
-function getContent(){
-  if(currentPage === 'dashboard') return dashboardHTML();
-  if(currentPage === 'deals') return tableHTML('deals');
-  if(currentPage === 'contacts') return tableHTML('contacts');
-  if(currentPage === 'products') return tableHTML('products');
-  if(currentPage === 'reps') return tableHTML('reps');
-  if(currentPage === 'settings') return settingsHTML();
-  return '';
-}
+    function userDataRef(){
+      if (!currentFirebaseUser) return null;
+      return db.ref("crmData/" + currentFirebaseUser.uid);
+    }
 
-function dashboardHTML(){
-  const totalDeals = data.deals.reduce((s,d) => s + Number(d.amount || 0), 0);
-  const wonDeals = data.deals.filter(d => d.status === 'done').reduce((s,d) => s + Number(d.amount || 0), 0);
-  const cards = [
-    ['fa-handshake', 'الصفقات', data.deals.length],
-    ['fa-users', 'العملاء', data.contacts.length],
-    ['fa-coins', 'قيمة الصفقات', money(totalDeals) + ' ج.م'],
-    ['fa-check-circle', 'المكتمل', money(wonDeals) + ' ج.م']
-  ];
-  return `
-    <div class="grid md:grid-cols-4 grid-cols-2 gap-3 mb-4">
-      ${cards.map(c => `<div class="card p-4"><div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid ${c[0]}"></i></div><div class="text-2xl font-black">${c[2]}</div><div class="text-sm text-slate-400">${c[1]}</div></div>`).join('')}
-    </div>
-    <div class="grid lg:grid-cols-2 gap-4">
-      <div class="card p-4"><h2 class="font-black mb-3">آخر الصفقات</h2>${data.deals.slice(-5).reverse().map(dealCard).join('') || empty('لا توجد صفقات')}</div>
-      <div class="card p-4"><h2 class="font-black mb-3">أداء المندوبين</h2>${data.reps.map(repProgress).join('') || empty('لا يوجد مندوبين')}</div>
-    </div>`;
-}
-function dealCard(d){
-  return `<div class="flex items-center justify-between border-b border-slate-800 py-3"><div><div class="font-bold">${escapeHTML(d.title)}</div><div class="text-xs text-slate-400">${escapeHTML(d.client)}</div></div><div class="text-left"><div class="font-black text-[#2d9cdb]">${money(d.amount)}</div><span class="badge ${statusClass(d.status)}">${statusLabel(d.status)}</span></div></div>`;
-}
-function repProgress(r){
-  const pct = Math.min(100, Math.round(Number(r.sales || 0) / Math.max(1, Number(r.target || 1)) * 100));
-  return `<div class="mb-4"><div class="flex justify-between text-sm mb-1"><b>${escapeHTML(r.name)}</b><span>${pct}%</span></div><div class="h-2 rounded-full bg-[#111d35] overflow-hidden"><div class="h-full bg-[#2d9cdb]" style="width:${pct}%"></div></div></div>`;
-}
+    function saveData(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
 
-function tableHTML(type){
-  const config = {
-    deals: { keys:['title','client','amount','status','priority','date','rep'], search:['title','client','rep'], heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب'] },
-    contacts: { keys:['name','phone','email','company','zone','group'], search:['name','phone','email','company'], heads:['الاسم','الهاتف','الإيميل','الشركة','المنطقة','المجموعة'] },
-    products: { keys:['name','sku','category','price','stock'], search:['name','sku','category'], heads:['المنتج','SKU','التصنيف','السعر','المخزون'] },
-    reps: { keys:['name','phone','target','sales','collected','commission'], search:['name','phone'], heads:['الاسم','الهاتف','الهدف','المبيعات','المحصل','العمولة %'] }
-  }[type];
-  const rows = filterRows(data[type], config.search);
-  if(!rows.length) return empty('لا توجد بيانات');
-  return `<div class="card overflow-auto"><table class="table"><thead><tr>${config.heads.map(h => `<th>${h}</th>`).join('')}<th>إجراءات</th></tr></thead><tbody>${rows.map(row => `<tr>${config.keys.map(k => `<td>${cell(type,k,row[k])}</td>`).join('')}<td><button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
-}
-function cell(type, key, value){
-  if(key === 'amount' || key === 'price' || key === 'target' || key === 'sales' || key === 'collected') return money(value);
-  if(key === 'status') return `<span class="badge ${statusClass(value)}">${statusLabel(value)}</span>`;
-  if(key === 'priority') return priorityLabel(value);
-  return escapeHTML(value ?? '');
-}
-function statusClass(s){ return {new:'status-new', progress:'status-progress', done:'status-done', lost:'status-lost'}[s] || 'status-new'; }
-function statusLabel(s){ return {new:'جديد', progress:'قيد التنفيذ', done:'مكتمل', lost:'مفقود'}[s] || s; }
-function priorityLabel(s){ return {high:'عالية', medium:'متوسطة', low:'منخفضة'}[s] || s; }
-function empty(text){ return `<div class="card p-10 text-center text-slate-400"><i class="fa-solid fa-inbox text-4xl mb-3 block"></i>${text}</div>`; }
+      const ref = userDataRef();
+      if (ref) {
+        ref.set(data).catch(() => {
+          toast('تم الحفظ محليًا فقط، تحقق من قواعد Firebase', 'error');
+        });
+      }
+    }
 
-function openForm(type, id=null){
-  editing = { type, id };
-  const row = id ? data[type].find(x => x.id === id) : {};
-  const title = id ? 'تعديل' : 'إضافة';
-  document.getElementById('modalTitle').textContent = `${title} ${typeLabel(type)}`;
-  document.getElementById('modalBody').innerHTML = formFields(type, row) + `<div class="flex gap-2 pt-2"><button class="btn btn-primary flex-1" type="submit"><i class="fa-solid fa-save"></i> حفظ</button><button class="btn btn-soft" type="button" onclick="closeModal()">إلغاء</button></div>`;
-  document.getElementById('modal').classList.add('show');
-}
-function typeLabel(type){ return {deals:'صفقة', contacts:'عميل', products:'منتج', reps:'مندوب'}[type] || 'عنصر'; }
-function field(name, label, value='', type='text'){
-  return `<label class="grid gap-1"><span class="text-sm text-slate-400 font-bold">${label}</span><input name="${name}" type="${type}" class="input" value="${escapeAttr(value)}"></label>`;
-}
-function selectField(name, label, value, options){
-  return `<label class="grid gap-1"><span class="text-sm text-slate-400 font-bold">${label}</span><select name="${name}" class="input">${options.map(o => `<option value="${o[0]}" ${value===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></label>`;
-}
-function textarea(name, label, value=''){
-  return `<label class="grid gap-1 md:col-span-2"><span class="text-sm text-slate-400 font-bold">${label}</span><textarea name="${name}" class="input min-h-24">${escapeHTML(value)}</textarea></label>`;
-}
-function formFields(type, r){
-  if(type === 'deals') return `<div class="grid md:grid-cols-2 gap-3">${field('title','عنوان الصفقة',r.title)}${field('client','العميل',r.client)}${field('amount','المبلغ',r.amount,'number')}${field('date','التاريخ',r.date,'date')}${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}${selectField('priority','الأولوية',r.priority || 'medium', [['high','عالية'],['medium','متوسطة'],['low','منخفضة']])}${field('rep','المندوب',r.rep)}${textarea('notes','ملاحظات',r.notes)}</div>`;
-  if(type === 'contacts') return `<div class="grid md:grid-cols-2 gap-3">${field('name','اسم العميل',r.name)}${field('phone','الهاتف',r.phone)}${field('email','الإيميل',r.email,'email')}${field('company','الشركة',r.company)}${field('zone','المنطقة',r.zone)}${field('group','المجموعة',r.group)}${textarea('notes','ملاحظات',r.notes)}</div>`;
-  if(type === 'products') return `<div class="grid md:grid-cols-2 gap-3">${field('name','اسم المنتج',r.name)}${field('sku','SKU',r.sku)}${field('category','التصنيف',r.category)}${field('price','السعر',r.price,'number')}${field('stock','المخزون',r.stock,'number')}</div>`;
-  if(type === 'reps') return `<div class="grid md:grid-cols-2 gap-3">${field('name','اسم المندوب',r.name)}${field('phone','الهاتف',r.phone)}${field('target','الهدف',r.target,'number')}${field('sales','المبيعات',r.sales,'number')}${field('collected','المحصل',r.collected,'number')}${field('commission','العمولة %',r.commission,'number')}</div>`;
-}
-function saveForm(e){
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const row = Object.fromEntries(fd.entries());
-  ['amount','price','stock','target','sales','collected','commission'].forEach(k => { if(k in row) row[k] = Number(row[k] || 0); });
-  if(editing.id){
-    const idx = data[editing.type].findIndex(x => x.id === editing.id);
-    data[editing.type][idx] = { ...data[editing.type][idx], ...row };
-  } else {
-    data[editing.type].push({ id: uid(), ...row });
-  }
-  saveData(); closeModal(); render(); toast('تم الحفظ بنجاح');
-}
-function removeRow(type, id){
-  if(!confirm('تأكيد الحذف؟')) return;
-  data[type] = data[type].filter(x => x.id !== id);
-  saveData(); render(); toast('تم الحذف');
-}
-function closeModal(){ document.getElementById('modal').classList.remove('show'); editing = null; }
+    function loadData(){
+      try {
+        const saved = localStorage.getItem(STORE_KEY);
+        return saved ? JSON.parse(saved) : defaults();
+      } catch {
+        return defaults();
+      }
+    }
 
-function settingsHTML(){
-  const user = data.users[0] || {username:'admin', password:'admin'};
-  return `<div class="card p-4 max-w-xl">
-    <h2 class="font-black text-lg mb-3">إعدادات الدخول</h2>
-    <form class="grid gap-3" onsubmit="saveSettings(event)">
-      ${field('username','اسم المستخدم',user.username)}
-      ${field('password','كلمة المرور',user.password,'text')}
-      <button class="btn btn-primary w-fit" type="submit"><i class="fa-solid fa-save"></i> حفظ الإعدادات</button>
-    </form>
-    <hr class="border-slate-800 my-5">
-    <button class="btn btn-danger" onclick="resetData()"><i class="fa-solid fa-rotate-left"></i> إعادة ضبط البيانات</button>
-  </div>`;
-}
-function saveSettings(e){
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  data.users = [{ username: fd.get('username').trim() || 'admin', password: fd.get('password') || 'admin' }];
-  saveData(); toast('تم حفظ الإعدادات');
-}
-function resetData(){
-  if(!confirm('سيتم حذف كل البيانات الحالية واسترجاع البيانات التجريبية. هل أنت متأكد؟')) return;
-  data = defaults(); saveData(); render(); toast('تمت إعادة الضبط');
-}
+    function login(){
+      const email = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'crm-backup.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-function importJSON(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const imported = JSON.parse(reader.result);
-      if(!imported.deals || !imported.contacts) throw new Error('bad file');
-      data = imported; saveData(); render(); toast('تم الاستيراد بنجاح');
-    } catch { toast('ملف غير صحيح', 'error'); }
-    event.target.value = '';
-  };
-  reader.readAsText(file);
-}
+      if(!email || !password) {
+        toast('اكتب البريد وكلمة المرور', 'error');
+        return;
+      }
 
-function toast(text, type='ok'){
-  const box = document.createElement('div');
-  box.className = `px-4 py-3 rounded-xl shadow-xl text-sm font-bold ${type==='error' ? 'bg-red-900 text-white' : 'bg-emerald-900 text-white'}`;
-  box.textContent = text;
-  document.getElementById('toast').appendChild(box);
-  setTimeout(() => box.remove(), 2500);
-}
-function escapeHTML(value){
-  return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-}
-function escapeAttr(value){ return escapeHTML(value).replace(/'/g, '&#039;'); }
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => toast('تم تسجيل الدخول'))
+        .catch((error) => toast(arFirebaseError(error), 'error'));
+    }
 
-boot();
-</script>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-registerUser('user@example.com', 'password123');<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    function register(){
+      const email = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyByWvUx4RDUyYKwJH91g1QxpCdcVmpEE5I",
-  authDomain: "crm-proo.firebaseapp.com",
-  databaseURL: "https://crm-proo-default-rtdb.firebaseio.com",
-  projectId: "crm-proo",
-  storageBucket: "crm-proo.firebasestorage.app",
-  messagingSenderId: "956449284026",
-  appId: "1:956449284026:web:3034599054b281c7104783"
-};
+      if(!email || !password) {
+        toast('اكتب البريد وكلمة المرور', 'error');
+        return;
+      }
 
-firebase.initializeApp(firebaseConfig);
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
 
-const db = firebase.database();
-const auth = firebase.auth();
+          return db.ref("users/" + user.uid).set({
+            email: email,
+            role: "user",
+            createdAt: Date.now()
+          });
+        })
+        .then(() => {
+          toast('تم إنشاء الحساب بنجاح');
+        })
+        .catch((error) => toast(arFirebaseError(error), 'error'));
+    }
 
-function registerUser(email, password) {
-  auth.createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
+    function logoutUser(){
+      auth.signOut()
+        .then(() => toast('تم تسجيل الخروج'))
+        .catch(() => toast('حدث خطأ أثناء تسجيل الخروج', 'error'));
+    }
 
-      const user = userCredential.user;
+    auth.onAuthStateChanged((user) => {
+      currentFirebaseUser = user || null;
 
-      db.ref("users/" + user.uid).set({
-        email: email,
-        role: "user",
-        createdAt: Date.now()
+      if (user) {
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+
+        db.ref("crmData/" + user.uid).once("value")
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              data = snapshot.val();
+            } else {
+              data = loadData();
+              return db.ref("crmData/" + user.uid).set(data);
+            }
+          })
+          .then(() => {
+            buildNav();
+            render();
+          })
+          .catch(() => {
+            data = loadData();
+            buildNav();
+            render();
+            toast('تعذر تحميل بيانات Firebase، تم تشغيل البيانات المحلية', 'error');
+          });
+
+      } else {
+        document.getElementById("loginScreen").classList.remove("hidden");
+        document.getElementById("app").classList.add("hidden");
+      }
+    });
+
+    function arFirebaseError(error){
+      const code = error && error.code ? error.code : '';
+      const messages = {
+        'auth/invalid-email': 'البريد الإلكتروني غير صحيح',
+        'auth/user-not-found': 'هذا الحساب غير موجود',
+        'auth/wrong-password': 'كلمة المرور غير صحيحة',
+        'auth/invalid-credential': 'بيانات الدخول غير صحيحة',
+        'auth/email-already-in-use': 'هذا البريد مستخدم بالفعل',
+        'auth/weak-password': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت'
+      };
+      return messages[code] || (error.message || 'حدث خطأ');
+    }
+
+    function buildNav(){
+      document.getElementById('nav').innerHTML = pages.map(p => `
+        <button class="nav-item ${currentPage === p.id ? 'active' : ''}" onclick="go('${p.id}')">
+          <i class="fa-solid ${p.icon} w-5"></i>
+          <span>${p.label}</span>
+        </button>
+      `).join('');
+    }
+
+    function go(page){
+      currentPage = page;
+      buildNav();
+      render();
+    }
+
+    function query(){
+      return document.getElementById('search')?.value.trim().toLowerCase() || '';
+    }
+
+    function filterRows(rows, keys){
+      const q = query();
+      if(!q) return rows;
+      return rows.filter(row => keys.some(k => String(row[k] || '').toLowerCase().includes(q)));
+    }
+
+    function render(){
+      const toolbar = document.getElementById('toolbar');
+      const content = document.getElementById('content');
+      const page = pages.find(p => p.id === currentPage);
+
+      toolbar.innerHTML = `<h1 class="text-2xl font-black ml-auto">${page.label}</h1>` + getToolbar();
+      content.innerHTML = getContent();
+    }
+
+    function getToolbar(){
+      if(currentPage === 'deals') return `<button class="btn btn-primary" onclick="openForm('deals')"><i class="fa-solid fa-plus"></i> صفقة</button>`;
+      if(currentPage === 'contacts') return `<button class="btn btn-primary" onclick="openForm('contacts')"><i class="fa-solid fa-plus"></i> عميل</button>`;
+      if(currentPage === 'products') return `<button class="btn btn-primary" onclick="openForm('products')"><i class="fa-solid fa-plus"></i> منتج</button>`;
+      if(currentPage === 'reps') return `<button class="btn btn-primary" onclick="openForm('reps')"><i class="fa-solid fa-plus"></i> مندوب</button>`;
+      return '';
+    }
+
+    function getContent(){
+      if(currentPage === 'dashboard') return dashboardHTML();
+      if(currentPage === 'deals') return tableHTML('deals');
+      if(currentPage === 'contacts') return tableHTML('contacts');
+      if(currentPage === 'products') return tableHTML('products');
+      if(currentPage === 'reps') return tableHTML('reps');
+      if(currentPage === 'settings') return settingsHTML();
+      return '';
+    }
+
+    function dashboardHTML(){
+      const totalDeals = data.deals.reduce((s,d) => s + Number(d.amount || 0), 0);
+      const wonDeals = data.deals.filter(d => d.status === 'done').reduce((s,d) => s + Number(d.amount || 0), 0);
+
+      const cards = [
+        ['fa-handshake', 'الصفقات', data.deals.length],
+        ['fa-users', 'العملاء', data.contacts.length],
+        ['fa-coins', 'قيمة الصفقات', money(totalDeals) + ' ج.م'],
+        ['fa-check-circle', 'المكتمل', money(wonDeals) + ' ج.م']
+      ];
+
+      return `
+        <div class="grid md:grid-cols-4 grid-cols-2 gap-3 mb-4">
+          ${cards.map(c => `
+            <div class="card p-4">
+              <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid ${c[0]}"></i></div>
+              <div class="text-2xl font-black">${c[2]}</div>
+              <div class="text-sm text-slate-400">${c[1]}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <h2 class="font-black mb-3">آخر الصفقات</h2>
+            ${data.deals.slice(-5).reverse().map(dealCard).join('') || empty('لا توجد صفقات')}
+          </div>
+
+          <div class="card p-4">
+            <h2 class="font-black mb-3">أداء المندوبين</h2>
+            ${data.reps.map(repProgress).join('') || empty('لا يوجد مندوبين')}
+          </div>
+        </div>`;
+    }
+
+    function dealCard(d){
+      return `
+        <div class="flex items-center justify-between border-b border-slate-800 py-3">
+          <div>
+            <div class="font-bold">${escapeHTML(d.title)}</div>
+            <div class="text-xs text-slate-400">${escapeHTML(d.client)}</div>
+          </div>
+          <div class="text-left">
+            <div class="font-black text-[#2d9cdb]">${money(d.amount)}</div>
+            <span class="badge ${statusClass(d.status)}">${statusLabel(d.status)}</span>
+          </div>
+        </div>`;
+    }
+
+    function repProgress(r){
+      const pct = Math.min(100, Math.round(Number(r.sales || 0) / Math.max(1, Number(r.target || 1)) * 100));
+
+      return `
+        <div class="mb-4">
+          <div class="flex justify-between text-sm mb-1">
+            <b>${escapeHTML(r.name)}</b>
+            <span>${pct}%</span>
+          </div>
+          <div class="h-2 rounded-full bg-[#111d35] overflow-hidden">
+            <div class="h-full bg-[#2d9cdb]" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }
+
+    function tableHTML(type){
+      const config = {
+        deals: {
+          keys:['title','client','amount','status','priority','date','rep'],
+          search:['title','client','rep'],
+          heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب']
+        },
+        contacts: {
+          keys:['name','phone','email','company','zone','group'],
+          search:['name','phone','email','company'],
+          heads:['الاسم','الهاتف','الإيميل','الشركة','المنطقة','المجموعة']
+        },
+        products: {
+          keys:['name','sku','category','price','stock'],
+          search:['name','sku','category'],
+          heads:['المنتج','SKU','التصنيف','السعر','المخزون']
+        },
+        reps: {
+          keys:['name','phone','target','sales','collected','commission'],
+          search:['name','phone'],
+          heads:['الاسم','الهاتف','الهدف','المبيعات','المحصل','العمولة %']
+        }
+      }[type];
+
+      const rows = filterRows(data[type], config.search);
+      if(!rows.length) return empty('لا توجد بيانات');
+
+      return `
+        <div class="card overflow-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                ${config.heads.map(h => `<th>${h}</th>`).join('')}
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr>
+                  ${config.keys.map(k => `<td>${cell(type,k,row[k])}</td>`).join('')}
+                  <td>
+                    <button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function cell(type, key, value){
+      if(key === 'amount' || key === 'price' || key === 'target' || key === 'sales' || key === 'collected') return money(value);
+      if(key === 'status') return `<span class="badge ${statusClass(value)}">${statusLabel(value)}</span>`;
+      if(key === 'priority') return priorityLabel(value);
+      return escapeHTML(value ?? '');
+    }
+
+    function statusClass(s){
+      return {new:'status-new', progress:'status-progress', done:'status-done', lost:'status-lost'}[s] || 'status-new';
+    }
+
+    function statusLabel(s){
+      return {new:'جديد', progress:'قيد التنفيذ', done:'مكتمل', lost:'مفقود'}[s] || s;
+    }
+
+    function priorityLabel(s){
+      return {high:'عالية', medium:'متوسطة', low:'منخفضة'}[s] || s;
+    }
+
+    function empty(text){
+      return `
+        <div class="card p-10 text-center text-slate-400">
+          <i class="fa-solid fa-inbox text-4xl mb-3 block"></i>
+          ${text}
+        </div>`;
+    }
+
+    function openForm(type, id=null){
+      editing = { type, id };
+      const row = id ? data[type].find(x => x.id === id) : {};
+      const title = id ? 'تعديل' : 'إضافة';
+
+      document.getElementById('modalTitle').textContent = `${title} ${typeLabel(type)}`;
+      document.getElementById('modalBody').innerHTML =
+        formFields(type, row) +
+        `<div class="flex gap-2 pt-2">
+          <button class="btn btn-primary flex-1" type="submit">
+            <i class="fa-solid fa-save"></i>
+            حفظ
+          </button>
+          <button class="btn btn-soft" type="button" onclick="closeModal()">إلغاء</button>
+        </div>`;
+
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function typeLabel(type){
+      return {deals:'صفقة', contacts:'عميل', products:'منتج', reps:'مندوب'}[type] || 'عنصر';
+    }
+
+    function field(name, label, value='', type='text'){
+      return `
+        <label class="grid gap-1">
+          <span class="text-sm text-slate-400 font-bold">${label}</span>
+          <input name="${name}" type="${type}" class="input" value="${escapeAttr(value)}">
+        </label>`;
+    }
+
+    function selectField(name, label, value, options){
+      return `
+        <label class="grid gap-1">
+          <span class="text-sm text-slate-400 font-bold">${label}</span>
+          <select name="${name}" class="input">
+            ${options.map(o => `<option value="${o[0]}" ${value===o[0]?'selected':''}>${o[1]}</option>`).join('')}
+          </select>
+        </label>`;
+    }
+
+    function textarea(name, label, value=''){
+      return `
+        <label class="grid gap-1 md:col-span-2">
+          <span class="text-sm text-slate-400 font-bold">${label}</span>
+          <textarea name="${name}" class="input min-h-24">${escapeHTML(value)}</textarea>
+        </label>`;
+    }
+
+    function formFields(type, r){
+      if(type === 'deals') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('title','عنوان الصفقة',r.title)}
+            ${field('client','العميل',r.client)}
+            ${field('amount','المبلغ',r.amount,'number')}
+            ${field('date','التاريخ',r.date,'date')}
+            ${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}
+            ${selectField('priority','الأولوية',r.priority || 'medium', [['high','عالية'],['medium','متوسطة'],['low','منخفضة']])}
+            ${field('rep','المندوب',r.rep)}
+            ${textarea('notes','ملاحظات',r.notes)}
+          </div>`;
+      }
+
+      if(type === 'contacts') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('name','اسم العميل',r.name)}
+            ${field('phone','الهاتف',r.phone)}
+            ${field('email','الإيميل',r.email,'email')}
+            ${field('company','الشركة',r.company)}
+            ${field('zone','المنطقة',r.zone)}
+            ${field('group','المجموعة',r.group)}
+            ${textarea('notes','ملاحظات',r.notes)}
+          </div>`;
+      }
+
+      if(type === 'products') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('name','اسم المنتج',r.name)}
+            ${field('sku','SKU',r.sku)}
+            ${field('category','التصنيف',r.category)}
+            ${field('price','السعر',r.price,'number')}
+            ${field('stock','المخزون',r.stock,'number')}
+          </div>`;
+      }
+
+      if(type === 'reps') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('name','اسم المندوب',r.name)}
+            ${field('phone','الهاتف',r.phone)}
+            ${field('target','الهدف',r.target,'number')}
+            ${field('sales','المبيعات',r.sales,'number')}
+            ${field('collected','المحصل',r.collected,'number')}
+            ${field('commission','العمولة %',r.commission,'number')}
+          </div>`;
+      }
+
+      return '';
+    }
+
+    function saveForm(e){
+      e.preventDefault();
+
+      const fd = new FormData(e.target);
+      const row = Object.fromEntries(fd.entries());
+
+      ['amount','price','stock','target','sales','collected','commission'].forEach(k => {
+        if(k in row) row[k] = Number(row[k] || 0);
       });
 
-      alert("تم إنشاء الحساب بنجاح");
+      if(editing.id){
+        const idx = data[editing.type].findIndex(x => x.id === editing.id);
+        data[editing.type][idx] = { ...data[editing.type][idx], ...row };
+      } else {
+        data[editing.type].push({ id: uid(), ...row });
+      }
 
-    })
-    .catch((error) => {
-      alert(error.message);
-    });
-}
+      saveData();
+      closeModal();
+      render();
+      toast('تم الحفظ بنجاح');
+    }
 
-function login() {
+    function removeRow(type, id){
+      if(!confirm('تأكيد الحذف؟')) return;
 
-  const email = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+      data[type] = data[type].filter(x => x.id !== id);
 
-  loginUser(email, password);
+      saveData();
+      render();
+      toast('تم الحذف');
+    }
 
-}
-function register() {
+    function closeModal(){
+      document.getElementById('modal').classList.remove('show');
+      editing = null;
+    }
 
-  const email = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+    function settingsHTML(){
+      return `
+        <div class="card p-4 max-w-xl">
+          <h2 class="font-black text-lg mb-3">إعدادات الحساب</h2>
 
-  registerUser(email, password);
+          <div class="grid gap-3">
+            <div>
+              <div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div>
+              <div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div>
+            </div>
 
-}
-auth.onAuthStateChanged((user) => {
+            <button class="btn btn-danger w-fit" onclick="resetData()">
+              <i class="fa-solid fa-rotate-left"></i>
+              إعادة ضبط بيانات CRM
+            </button>
+          </div>
+        </div>`;
+    }
 
-  if (user) {
-    console.log("Logged:", user.email);
-  } else {
-    console.log("No user");
-  }
+    function resetData(){
+      if(!confirm('سيتم حذف كل البيانات الحالية واسترجاع البيانات التجريبية. هل أنت متأكد؟')) return;
 
-});
-</script>
+      data = defaults();
+      saveData();
+      render();
+      toast('تمت إعادة الضبط');
+    }
 
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+
+      a.href = URL.createObjectURL(blob);
+      a.download = 'crm-proo-backup.json';
+      a.click();
+
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJSON(event){
+      const file = event.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+
+          if(!imported.deals || !imported.contacts) {
+            throw new Error('bad file');
+          }
+
+          data = imported;
+          saveData();
+          render();
+          toast('تم الاستيراد بنجاح');
+
+        } catch {
+          toast('ملف غير صحيح', 'error');
+        }
+
+        event.target.value = '';
+      };
+
+      reader.readAsText(file);
+    }
+
+    function toast(text, type='ok'){
+      const box = document.createElement('div');
+
+      box.className = `px-4 py-3 rounded-xl shadow-xl text-sm font-bold ${type==='error' ? 'bg-red-900 text-white' : 'bg-emerald-900 text-white'}`;
+      box.textContent = text;
+
+      document.getElementById('toast').appendChild(box);
+
+      setTimeout(() => box.remove(), 2800);
+    }
+
+    function escapeHTML(value){
+      return String(value ?? '').replace(/[&<>"]/g, ch => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;'
+      }[ch]));
+    }
+
+    function escapeAttr(value){
+      return escapeHTML(value).replace(/'/g, '&#039;');
+    }
+  </script>
 </body>
 </html>
