@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM-PROO</title>
+  <meta name="theme-color" content="#0c1527" />
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22CRM-PROO%22,%22short_name%22:%22CRM-PROO%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23080e1a%22,%22theme_color%22:%22%230c1527%22}" />
+  <title>CRM-PROO Ultimate</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -27,6 +30,8 @@
     .btn-secondary { background:#17233d; color:#dce4f0; border:1px solid rgba(80,110,150,.20); }
     .btn-soft { background:#111d35; color:#b8c6d9; border:1px solid rgba(80,110,150,.14); }
     .btn-danger { background:rgba(231,76,60,.12); color:#ff7b72; }
+    .btn-green { background:rgba(39,174,96,.15); color:#2ecc71; }
+    .mini-img{width:38px;height:38px;border-radius:12px;object-fit:cover;background:#111d35;display:inline-flex;align-items:center;justify-content:center}
 
     .nav-item { color:#8190a8; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; width:100%; }
     .nav-item.active, .nav-item:hover { background:rgba(45,156,219,.12); color:#2d9cdb; }
@@ -62,7 +67,7 @@
         <i class="fa-solid fa-cube"></i>
       </div>
 
-      <h1 class="text-center text-2xl font-black mb-1">CRM-PROO</h1>
+      <h1 class="text-center text-2xl font-black mb-1">CRM-PROO Ultimate</h1>
       <p class="text-center text-sm text-slate-400 mb-6">تسجيل دخول حقيقي باستخدام Firebase</p>
 
       <div class="grid gap-3">
@@ -95,6 +100,8 @@
 
       <input id="search" class="input max-w-md mr-auto" placeholder="بحث في العملاء والصفقات..." oninput="render()">
 
+      <button class="btn btn-soft" onclick="installPWA()"><i class="fa-solid fa-mobile-screen"></i><span class="hidden md:inline">تثبيت</span></button>
+      <button class="btn btn-soft" onclick="manualBackup()"><i class="fa-solid fa-cloud-arrow-down"></i><span class="hidden md:inline">Backup</span></button>
       <button class="btn btn-soft" onclick="exportJSON()">
         <i class="fa-solid fa-download"></i>
         <span class="hidden md:inline">تصدير</span>
@@ -167,6 +174,10 @@
     let currentPage = 'dashboard';
     let editing = null;
     let currentFirebaseUser = null;
+    let currentRole = 'user';
+    let chartStatus = null;
+    let chartReps = null;
+    let deferredInstallPrompt = null;
     let data = loadData();
 
     const pages = [
@@ -175,30 +186,36 @@
       { id:'contacts', label:'العملاء', icon:'fa-address-book' },
       { id:'products', label:'المنتجات', icon:'fa-box-open' },
       { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
+      { id:'notifications', label:'الإشعارات', icon:'fa-bell' },
+      { id:'ai', label:'AI Assistant', icon:'fa-robot' },
       { id:'settings', label:'الإعدادات', icon:'fa-gear' }
     ];
 
     function defaults(){
       return {
         contacts: [
-          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم' },
-          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'' },
-          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', notes:'' }
+          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم', photo:'' },
+          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'', photo:'' },
+          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', notes:'', photo:'' }
         ],
         deals: [
-          { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'' },
-          { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'' },
-          { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'' }
+          { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'', file:'' },
+          { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'', file:'' },
+          { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'', file:'' }
         ],
         products: [
-          { id: uid(), name:'باقة صيانة', sku:'SRV-001', category:'خدمات', price:5000, stock:50 },
-          { id: uid(), name:'نظام محتوى', sku:'SW-001', category:'برمجيات', price:25000, stock:10 },
-          { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999 }
+          { id: uid(), name:'باقة صيانة', sku:'SRV-001', category:'خدمات', price:5000, stock:50, photo:'' },
+          { id: uid(), name:'نظام محتوى', sku:'SW-001', category:'برمجيات', price:25000, stock:10, photo:'' },
+          { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999, photo:'' }
         ],
         reps: [
           { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5 },
           { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4 }
-        ]
+        ],
+        notifications: [
+          { id: uid(), text:'مرحبًا بك في CRM-PROO Ultimate', time: Date.now(), read:false }
+        ],
+        meta: { lastBackup: null }
       };
     }
 
@@ -216,6 +233,7 @@
     }
 
     function saveData(){
+      normalizeData();
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
 
       const ref = userDataRef();
@@ -233,6 +251,15 @@
       } catch {
         return defaults();
       }
+    }
+
+    function normalizeData(){
+      data.contacts ||= [];
+      data.deals ||= [];
+      data.products ||= [];
+      data.reps ||= [];
+      data.notifications ||= [];
+      data.meta ||= { lastBackup:null };
     }
 
 function login(){
@@ -286,8 +313,9 @@ function login(){
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
 
-        db.ref("crmData/" + user.uid).once("value")
-          .then((snapshot) => {
+        Promise.all([db.ref("users/" + user.uid).once("value"), db.ref("crmData/" + user.uid).once("value")])
+          .then(([userSnap, snapshot]) => {
+            currentRole = userSnap.val()?.role || 'user';
             if (snapshot.exists()) {
               data = snapshot.val();
             } else {
@@ -296,6 +324,7 @@ function login(){
             }
           })
           .then(() => {
+            normalizeData();
             buildNav();
             render();
           })
@@ -358,6 +387,7 @@ function login(){
 
       toolbar.innerHTML = `<h1 class="text-2xl font-black ml-auto">${page.label}</h1>` + getToolbar();
       content.innerHTML = getContent();
+      if(currentPage === 'dashboard') setTimeout(drawCharts, 80);
     }
 
     function getToolbar(){
@@ -374,6 +404,8 @@ function login(){
       if(currentPage === 'contacts') return tableHTML('contacts');
       if(currentPage === 'products') return tableHTML('products');
       if(currentPage === 'reps') return tableHTML('reps');
+      if(currentPage === 'notifications') return notificationsHTML();
+      if(currentPage === 'ai') return aiHTML();
       if(currentPage === 'settings') return settingsHTML();
       return '';
     }
@@ -400,6 +432,10 @@ function login(){
           `).join('')}
         </div>
 
+        <div class="grid lg:grid-cols-2 gap-4 mb-4">
+          <div class="card p-4"><h2 class="font-black mb-3">حالات الصفقات</h2><canvas id="statusChart" height="160"></canvas></div>
+          <div class="card p-4"><h2 class="font-black mb-3">مبيعات المندوبين</h2><canvas id="repChart" height="160"></canvas></div>
+        </div>
         <div class="grid lg:grid-cols-2 gap-4">
           <div class="card p-4">
             <h2 class="font-black mb-3">آخر الصفقات</h2>
@@ -411,6 +447,17 @@ function login(){
             ${data.reps.map(repProgress).join('') || empty('لا يوجد مندوبين')}
           </div>
         </div>`;
+    }
+
+    function drawCharts(){
+      const c1 = document.getElementById('statusChart');
+      const c2 = document.getElementById('repChart');
+      if(!c1 || !c2 || !window.Chart) return;
+      if(chartStatus) chartStatus.destroy();
+      if(chartReps) chartReps.destroy();
+      const counts = ['new','progress','done','lost'].map(st => data.deals.filter(d => d.status === st).length);
+      chartStatus = new Chart(c1, { type:'doughnut', data:{ labels:['جديد','قيد التنفيذ','مكتمل','مفقود'], datasets:[{ data:counts }] }, options:{ plugins:{ legend:{ labels:{ color:'#dce4f0' }}}}});
+      chartReps = new Chart(c2, { type:'bar', data:{ labels:data.reps.map(r=>r.name), datasets:[{ label:'المبيعات', data:data.reps.map(r=>Number(r.sales||0)) }] }, options:{ scales:{ x:{ ticks:{ color:'#dce4f0' }}, y:{ ticks:{ color:'#dce4f0' }}}, plugins:{ legend:{ labels:{ color:'#dce4f0' }}}}});
     }
 
     function dealCard(d){
@@ -450,14 +497,14 @@ function login(){
           heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب']
         },
         contacts: {
-          keys:['name','phone','email','company','zone','group'],
+          keys:['photo','name','phone','email','company','zone','group'],
           search:['name','phone','email','company'],
-          heads:['الاسم','الهاتف','الإيميل','الشركة','المنطقة','المجموعة']
+          heads:['صورة','الاسم','الهاتف','الإيميل','الشركة','المنطقة','المجموعة']
         },
         products: {
-          keys:['name','sku','category','price','stock'],
+          keys:['photo','name','sku','category','price','stock'],
           search:['name','sku','category'],
-          heads:['المنتج','SKU','التصنيف','السعر','المخزون']
+          heads:['صورة','المنتج','SKU','التصنيف','السعر','المخزون']
         },
         reps: {
           keys:['name','phone','target','sales','collected','commission'],
@@ -483,22 +530,10 @@ function login(){
                 <tr>
                   ${config.keys.map(k => `<td>${cell(type,k,row[k])}</td>`).join('')}
                   <td>
-${type === 'contacts' ? `
-  <button class="btn btn-soft !p-2" onclick="openWhatsApp('${row.phone}')">
-    <i class="fa-brands fa-whatsapp"></i>
-  </button>
-` : ''}
-
-    <button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')">
-  <i class="fa-solid fa-pen"></i>
-</button>
-
-<button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')">
-  <i class="fa-solid fa-trash"></i>
-</button>                    </button>
-                    <button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
+${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsApp('${safeJS(row.phone)}','${safeJS(row.name)}')"><i class="fa-brands fa-whatsapp"></i></button>` : ''}
+                    ${type === 'contacts' ? `<button class="btn btn-soft !p-2" onclick="notifyFollow('${safeJS(row.name)}')"><i class="fa-solid fa-bell"></i></button>` : ''}
+                    <button class="btn btn-soft !p-2" onclick="openForm('${type}','${row.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-danger !p-2" onclick="removeRow('${type}','${row.id}')"><i class="fa-solid fa-trash"></i></button>
                   </td>
                 </tr>
               `).join('')}
@@ -508,6 +543,7 @@ ${type === 'contacts' ? `
     }
 
     function cell(type, key, value){
+      if(key === 'photo') return value ? `<img class="mini-img" src="${value}">` : `<div class="mini-img"><i class="fa-solid fa-image text-slate-500"></i></div>`;
       if(key === 'amount' || key === 'price' || key === 'target' || key === 'sales' || key === 'collected') return money(value);
       if(key === 'status') return `<span class="badge ${statusClass(value)}">${statusLabel(value)}</span>`;
       if(key === 'priority') return priorityLabel(value);
@@ -583,6 +619,18 @@ ${type === 'contacts' ? `
         </label>`;
     }
 
+    function fileField(name, label, accept='image/*'){
+      return `<label class="grid gap-1 md:col-span-2"><span class="text-sm text-slate-400 font-bold">${label}</span><input type="file" accept="${accept}" class="input" onchange="fileToHidden(event,'${name}')"><input type="hidden" name="${name}"></label>`;
+    }
+
+    function fileToHidden(e, name){
+      const file = e.target.files[0]; if(!file) return;
+      if(file.size > 750000) return toast('الملف كبير. استخدم أقل من 750KB للنسخة المجانية', 'error');
+      const reader = new FileReader();
+      reader.onload = () => { const hidden = [...document.querySelectorAll(`input[name="${name}"]`)].find(i=>i.type==='hidden'); if(hidden) hidden.value = reader.result; toast('تم تحميل الملف داخل النموذج'); };
+      reader.readAsDataURL(file);
+    }
+
     function formFields(type, r){
       if(type === 'deals') {
         return `
@@ -594,7 +642,7 @@ ${type === 'contacts' ? `
             ${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}
             ${selectField('priority','الأولوية',r.priority || 'medium', [['high','عالية'],['medium','متوسطة'],['low','منخفضة']])}
             ${field('rep','المندوب',r.rep)}
-            ${textarea('notes','ملاحظات',r.notes)}
+            ${textarea('notes','ملاحظات',r.notes)}${fileField('file','ملف أو صورة للصفقة','image/*,.pdf')}
           </div>`;
       }
 
@@ -607,7 +655,7 @@ ${type === 'contacts' ? `
             ${field('company','الشركة',r.company)}
             ${field('zone','المنطقة',r.zone)}
             ${field('group','المجموعة',r.group)}
-            ${textarea('notes','ملاحظات',r.notes)}
+            ${textarea('notes','ملاحظات',r.notes)}${fileField('photo','صورة العميل','image/*')}
           </div>`;
       }
 
@@ -618,7 +666,7 @@ ${type === 'contacts' ? `
             ${field('sku','SKU',r.sku)}
             ${field('category','التصنيف',r.category)}
             ${field('price','السعر',r.price,'number')}
-            ${field('stock','المخزون',r.stock,'number')}
+            ${field('stock','المخزون',r.stock,'number')}${fileField('photo','صورة المنتج','image/*')}
           </div>`;
       }
 
@@ -646,6 +694,7 @@ ${type === 'contacts' ? `
       ['amount','price','stock','target','sales','collected','commission'].forEach(k => {
         if(k in row) row[k] = Number(row[k] || 0);
       });
+      Object.keys(row).forEach(k => { if(row[k] === '') delete row[k]; });
 
       if(editing.id){
         const idx = data[editing.type].findIndex(x => x.id === editing.id);
@@ -654,6 +703,7 @@ ${type === 'contacts' ? `
         data[editing.type].push({ id: uid(), ...row });
       }
 
+      addNotification(`تم حفظ ${typeLabel(editing.type)} بنجاح`);
       saveData();
       closeModal();
       render();
@@ -665,6 +715,7 @@ ${type === 'contacts' ? `
 
       data[type] = data[type].filter(x => x.id !== id);
 
+      addNotification(`تم حذف ${typeLabel(type)}`);
       saveData();
       render();
       toast('تم الحذف');
@@ -676,25 +727,23 @@ ${type === 'contacts' ? `
     }
 
     function settingsHTML(){
-      return `
-        <div class="card p-4 max-w-xl">
+      const isAdmin = currentRole === 'admin';
+      return `<div class="grid gap-4 max-w-3xl">
+        <div class="card p-4">
           <h2 class="font-black text-lg mb-3">إعدادات الحساب</h2>
-
           <div class="grid gap-3">
-            <div>
-              <div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div>
-              <div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div>
-            </div>
-
-            <button class="btn btn-danger w-fit" onclick="resetData()">
-              <i class="fa-solid fa-rotate-left"></i>
-              إعادة ضبط بيانات CRM
-            </button>
+            <div><div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div><div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div></div>
+            <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${isAdmin ? 'Admin' : 'User'}</div></div>
+            <button class="btn btn-secondary w-fit" onclick="makeMeAdmin()"><i class="fa-solid fa-user-shield"></i> اجعلني Admin</button>
+            <button class="btn btn-danger w-fit" onclick="resetData()"><i class="fa-solid fa-rotate-left"></i> إعادة ضبط بيانات CRM</button>
           </div>
-        </div>`;
+        </div>
+        <div class="card p-4"><h2 class="font-black text-lg mb-3">PWA</h2><p class="text-sm text-slate-400">يمكن تثبيت التطبيق من زر تثبيت أو Add to Home Screen.</p></div>
+      </div>`;
     }
 
     function resetData(){
+      if(currentRole !== 'admin') return toast('إعادة الضبط للمدير فقط', 'error');
       if(!confirm('سيتم حذف كل البيانات الحالية واسترجاع البيانات التجريبية. هل أنت متأكد؟')) return;
 
       data = defaults();
@@ -766,23 +815,60 @@ ${type === 'contacts' ? `
 function escapeAttr(value){
   return escapeHTML(value).replace(/'/g, '&#039;');
 }
-function openWhatsApp(phone){
-  if(!phone){
-    toast('رقم الهاتف غير موجود', 'error');
-    return;
-  }
-
+function openWhatsApp(phone, name = ''){
+  if(!phone){ toast('رقم الهاتف غير موجود', 'error'); return; }
   let cleanPhone = String(phone).replace(/\D/g, '');
-
-  if(cleanPhone.startsWith('0')){
-    cleanPhone = '2' + cleanPhone;
-  }
-
-  const message = encodeURIComponent('مرحبًا، نتواصل معك من CRM-PROO');
-  const url = `https://wa.me/${cleanPhone}?text=${message}`;
-
-  window.open(url, '_blank');
+  if(cleanPhone.startsWith('0')) cleanPhone = '2' + cleanPhone;
+  const customerName = name ? `أستاذ/ة ${name}` : 'حضرتك';
+  const message = encodeURIComponent(`مرحبًا ${customerName},
+نتواصل معك من CRM-PROO بخصوص متابعة طلبك.
+هل يناسبك نتواصل اليوم؟`);
+  window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
 }
+
+function addNotification(text){
+  data.notifications ||= [];
+  data.notifications.unshift({ id:uid(), text, time:Date.now(), read:false });
+}
+
+function notifyFollow(name){
+  addNotification(`متابعة مطلوبة مع العميل: ${name}`);
+  saveData(); render(); toast('تمت إضافة إشعار متابعة');
+}
+
+function notificationsHTML(){
+  if(!data.notifications?.length) return empty('لا توجد إشعارات');
+  return `<div class="grid gap-3">${data.notifications.map(n=>`<div class="card p-4 flex items-center justify-between"><div><div class="font-bold">${escapeHTML(n.text)}</div><div class="text-xs text-slate-500">${new Date(n.time).toLocaleString('ar-EG')}</div></div><button class="btn btn-soft" onclick="markNotification('${n.id}')">${n.read?'مقروء':'تعليم كمقروء'}</button></div>`).join('')}</div>`;
+}
+function markNotification(id){ const n = data.notifications.find(x=>x.id===id); if(n) n.read=true; saveData(); render(); }
+
+function aiHTML(){
+  const total = data.deals.reduce((s,d)=>s+Number(d.amount||0),0);
+  const open = data.deals.filter(d=>d.status==='new'||d.status==='progress');
+  const topRep = [...data.reps].sort((a,b)=>Number(b.sales||0)-Number(a.sales||0))[0];
+  return `<div class="card p-5 max-w-3xl"><h2 class="font-black text-xl mb-3"><i class="fa-solid fa-robot text-[#2d9cdb]"></i> CRM AI Assistant</h2><div class="grid gap-3 text-sm leading-7"><div class="p-3 rounded-xl bg-[#111d35]">إجمالي قيمة الصفقات: <b>${money(total)} ج.م</b></div><div class="p-3 rounded-xl bg-[#111d35]">الصفقات المفتوحة: <b>${open.length}</b>. ركّز على الصفقات ذات الأولوية العالية أولًا.</div><div class="p-3 rounded-xl bg-[#111d35]">أفضل مندوب حاليًا: <b>${escapeHTML(topRep?.name || 'غير متاح')}</b>.</div><div class="p-3 rounded-xl bg-[#111d35]">اقتراح: استخدم زر واتساب للعملاء الجدد وسجل ملاحظات المتابعة.</div></div><button class="btn btn-primary mt-4" onclick="addNotification('راجع اقتراحات AI Assistant اليوم'); saveData(); render();"><i class="fa-solid fa-bell"></i> أضف تذكير</button></div>`;
+}
+
+function makeMeAdmin(){
+  if(!currentFirebaseUser) return;
+  db.ref('users/' + currentFirebaseUser.uid).update({ role:'admin' }).then(()=>{ currentRole='admin'; render(); toast('تم تحويل الحساب إلى Admin'); });
+}
+
+function manualBackup(){
+  if(!currentFirebaseUser) return;
+  data.meta ||= {}; data.meta.lastBackup = Date.now();
+  db.ref('backups/' + currentFirebaseUser.uid + '/' + data.meta.lastBackup).set(data).then(()=>toast('تم إنشاء Backup على Firebase')).catch(()=>toast('تعذر حفظ Backup', 'error'));
+}
+
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; });
+function installPWA(){
+  if(deferredInstallPrompt){ deferredInstallPrompt.prompt(); deferredInstallPrompt = null; }
+  else toast('من الموبايل استخدم Add to Home Screen من المتصفح');
+}
+
+setInterval(()=>{ if(currentFirebaseUser) saveData(); }, 300000);
+
+function safeJS(value){ return String(value ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
 
   </script>
   </body>
