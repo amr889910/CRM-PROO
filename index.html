@@ -102,6 +102,16 @@
 
       <button class="btn btn-soft" onclick="installPWA()"><i class="fa-solid fa-mobile-screen"></i><span class="hidden md:inline">تثبيت</span></button>
       <button class="btn btn-soft" onclick="manualBackup()"><i class="fa-solid fa-cloud-arrow-down"></i><span class="hidden md:inline">Backup</span></button>
+      <button class="btn btn-soft" onclick="exportExcel()">
+        <i class="fa-solid fa-file-excel"></i>
+        <span class="hidden md:inline">Excel</span>
+      </button>
+
+      <label class="btn btn-soft cursor-pointer">
+        <i class="fa-solid fa-file-import"></i>
+        <span class="hidden md:inline">استيراد Excel</span>
+        <input type="file" accept=".xlsx,.xls" class="hidden" onchange="importExcel(event)">
+      </label>
       <button class="btn btn-soft" onclick="exportJSON()">
         <i class="fa-solid fa-download"></i>
         <span class="hidden md:inline">تصدير</span>
@@ -145,6 +155,8 @@
   </div>
 
   <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] grid gap-2"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -790,6 +802,77 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       };
 
       reader.readAsText(file);
+    }
+
+    function exportExcel(){
+      const wb = XLSX.utils.book_new();
+
+      const sheets = {
+        contacts: data.contacts || [],
+        deals: data.deals || [],
+        products: data.products || [],
+        reps: data.reps || [],
+        notifications: data.notifications || []
+      };
+
+      Object.keys(sheets).forEach(name => {
+        const ws = XLSX.utils.json_to_sheet(sheets[name]);
+        XLSX.utils.book_append_sheet(wb, ws, name);
+      });
+
+      XLSX.writeFile(wb, "CRM-PROO-backup.xlsx");
+      toast("تم تصدير ملف Excel");
+    }
+
+    function importExcel(event){
+      const file = event.target.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(e){
+        try {
+          const workbook = XLSX.read(e.target.result, { type: "array" });
+
+          const imported = {
+            contacts: [],
+            deals: [],
+            products: [],
+            reps: [],
+            notifications: data.notifications || [],
+            meta: data.meta || {}
+          };
+
+          workbook.SheetNames.forEach(sheetName => {
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+            if(imported[sheetName] !== undefined){
+              imported[sheetName] = rows.map(row => ({
+                id: row.id || uid(),
+                ...row
+              }));
+            }
+          });
+
+          data = {
+            ...data,
+            ...imported
+          };
+
+          normalizeData();
+          saveData();
+          render();
+
+          toast("تم استيراد Excel بنجاح");
+
+        } catch(err) {
+          toast("ملف Excel غير صحيح", "error");
+        }
+
+        event.target.value = "";
+      };
+
+      reader.readAsArrayBuffer(file);
     }
 
     function toast(text, type='ok'){
