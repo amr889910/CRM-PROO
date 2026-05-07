@@ -834,38 +834,56 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         try {
           const workbook = XLSX.read(e.target.result, { type: "array" });
 
-          const imported = {
-            contacts: [],
-            deals: [],
-            products: [],
-            reps: [],
+          let imported = {
+            contacts: data.contacts || [],
+            deals: data.deals || [],
+            products: data.products || [],
+            reps: data.reps || [],
             notifications: data.notifications || [],
             meta: data.meta || {}
           };
 
           workbook.SheetNames.forEach(sheetName => {
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            const cleanName = sheetName.trim().toLowerCase();
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+              defval: ""
+            });
 
-            if(imported[sheetName] !== undefined){
-              imported[sheetName] = rows.map(row => ({
-                id: row.id || uid(),
-                ...row
-              }));
+            const fixedRows = rows.map(row => ({
+              id: row.id || uid(),
+              ...row
+            }));
+
+            if(cleanName === "contacts" || cleanName === "customers" || cleanName === "clients" || cleanName === "العملاء"){
+              imported.contacts = fixedRows;
+            }
+
+            if(cleanName === "deals" || cleanName === "sales" || cleanName === "الصفقات"){
+              imported.deals = fixedRows;
+            }
+
+            if(cleanName === "products" || cleanName === "items" || cleanName === "المنتجات"){
+              imported.products = fixedRows;
+            }
+
+            if(cleanName === "reps" || cleanName === "sales reps" || cleanName === "المندوبين"){
+              imported.reps = fixedRows;
             }
           });
 
-          data = {
-            ...data,
-            ...imported
-          };
+          data = imported;
 
           normalizeData();
           saveData();
+
+          currentPage = "contacts";
+          buildNav();
           render();
 
-          toast("تم استيراد Excel بنجاح");
+          toast("تم استيراد Excel وظهرت البيانات");
 
         } catch(err) {
+          console.error(err);
           toast("ملف Excel غير صحيح", "error");
         }
 
