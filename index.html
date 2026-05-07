@@ -1011,6 +1011,126 @@ setInterval(()=>{ if(currentFirebaseUser) saveData(); }, 300000);
 
 function safeJS(value){ return String(value ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
 
+function getReturnTotalByClient(client){
+  return (data.returns || [])
+    .filter(r => r.client === client)
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+}
+
+function getReturnTotalByRep(rep){
+  return (data.returns || [])
+    .filter(r => r.rep === rep)
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+}
+
+function getNetSalesByRep(rep){
+  const sales = (data.deals || [])
+    .filter(d => d.rep === rep && d.status === "done")
+    .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+  const returns = getReturnTotalByRep(rep);
+
+  return sales - returns;
+}
+
+function getNetSalesByClient(client){
+  const sales = (data.deals || [])
+    .filter(d => d.client === client && d.status === "done")
+    .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+  const returns = getReturnTotalByClient(client);
+
+  return sales - returns;
+}
+
+function kpiHTML(){
+  const totalSales = (data.deals || [])
+    .filter(d => d.status === "done")
+    .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+  const totalReturns = (data.returns || [])
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+  const netSales = totalSales - totalReturns;
+
+  const openDeals = (data.deals || [])
+    .filter(d => d.status === "new" || d.status === "progress").length;
+
+  const doneDeals = (data.deals || [])
+    .filter(d => d.status === "done").length;
+
+  const conversionRate = data.deals.length
+    ? Math.round((doneDeals / data.deals.length) * 100)
+    : 0;
+
+  return `
+    <div class="grid md:grid-cols-4 grid-cols-2 gap-3 mb-4">
+
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">إجمالي المبيعات</div>
+        <div class="text-2xl font-black text-[#2d9cdb]">${money(totalSales)} ج.م</div>
+      </div>
+
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">إجمالي المرتجعات</div>
+        <div class="text-2xl font-black text-red-400">${money(totalReturns)} ج.م</div>
+      </div>
+
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">صافي المبيعات</div>
+        <div class="text-2xl font-black text-green-400">${money(netSales)} ج.م</div>
+      </div>
+
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">Conversion Rate</div>
+        <div class="text-2xl font-black text-yellow-400">${conversionRate}%</div>
+      </div>
+
+    </div>
+
+    <div class="card p-4">
+      <h2 class="font-black mb-3">KPI المندوبين</h2>
+
+      <div class="overflow-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>المندوب</th>
+              <th>الهدف</th>
+              <th>المبيعات</th>
+              <th>المرتجعات</th>
+              <th>الصافي</th>
+              <th>نسبة التحقيق</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(data.reps || []).map(rep => {
+              const gross = (data.deals || [])
+                .filter(d => d.rep === rep.name && d.status === "done")
+                .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+              const returns = getReturnTotalByRep(rep.name);
+              const net = gross - returns;
+              const percent = rep.target ? Math.round((net / rep.target) * 100) : 0;
+
+              return `
+                <tr>
+                  <td>${escapeHTML(rep.name)}</td>
+                  <td>${money(rep.target)}</td>
+                  <td>${money(gross)}</td>
+                  <td class="text-red-400">${money(returns)}</td>
+                  <td class="text-green-400">${money(net)}</td>
+                  <td>${percent}%</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
   </script>
   </body>
   </html>
