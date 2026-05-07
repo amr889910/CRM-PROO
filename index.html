@@ -199,6 +199,8 @@
       { id:'contacts', label:'العملاء', icon:'fa-address-book' },
       { id:'products', label:'المنتجات', icon:'fa-box-open' },
       { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
+      { id:'returns', label:'المرتجعات', icon:'fa-rotate-left' },
+      { id:'kpi', label:'KPI', icon:'fa-bullseye' },
       { id:'notifications', label:'الإشعارات', icon:'fa-bell' },
       { id:'ai', label:'AI Assistant', icon:'fa-robot' },
       { id:'settings', label:'الإعدادات', icon:'fa-gear' }
@@ -206,6 +208,17 @@
 
     function defaults(){
       return {
+        returns: [
+          {
+            id: uid(),
+            client: "سارة أحمد",
+            rep: "أحمد سالم",
+            amount: 5000,
+            reason: "مرتجع تجريبي",
+            date: "2026-05-07",
+            notes: ""
+          }
+        ],
         contacts: [
           { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم', photo:'' },
           { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'', photo:'' },
@@ -289,6 +302,7 @@
     }
 
     function normalizeData(){
+      data.returns ||= [];
       data.contacts ||= [];
       data.deals ||= [];
       data.products ||= [];
@@ -412,6 +426,7 @@ function login(){
       if(currentPage === 'contacts') return `<button class="btn btn-primary" onclick="openForm('contacts')"><i class="fa-solid fa-plus"></i> عميل</button>`;
       if(currentPage === 'products') return `<button class="btn btn-primary" onclick="openForm('products')"><i class="fa-solid fa-plus"></i> منتج</button>`;
       if(currentPage === 'reps') return `<button class="btn btn-primary" onclick="openForm('reps')"><i class="fa-solid fa-plus"></i> مندوب</button>`;
+      if(currentPage === 'returns') return `<button class="btn btn-primary" onclick="openForm('returns')"><i class="fa-solid fa-plus"></i> مرتجع</button>`;
       return '';
     }
 
@@ -421,6 +436,8 @@ function login(){
       if(currentPage === 'contacts') return tableHTML('contacts');
       if(currentPage === 'products') return tableHTML('products');
       if(currentPage === 'reps') return tableHTML('reps');
+      if(currentPage === 'returns') return tableHTML('returns');
+      if(currentPage === 'kpi') return kpiHTML();
       if(currentPage === 'notifications') return notificationsHTML();
       if(currentPage === 'ai') return aiHTML();
       if(currentPage === 'settings') return settingsHTML();
@@ -527,6 +544,11 @@ function login(){
           keys:['name','phone','target','sales','collected','commission'],
           search:['name','phone'],
           heads:['الاسم','الهاتف','الهدف','المبيعات','المحصل','العمولة %']
+        },
+        returns: {
+          keys:['client','rep','amount','reason','date','notes'],
+          search:['client','rep','reason'],
+          heads:['العميل','المندوب','المبلغ','السبب','التاريخ','ملاحظات']
         }
       }[type];
 
@@ -607,7 +629,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function typeLabel(type){
-      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب'}[type] || 'عنصر';
+      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب', returns:'مرتجع'}[type] || 'عنصر';
     }
 
     function field(name, label, value='', type='text'){
@@ -697,6 +719,19 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
             ${field('collected','المحصل',r.collected,'number')}
             ${field('commission','العمولة %',r.commission,'number')}
           </div>`;
+      }
+
+      if(type === 'returns') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('client','العميل',r.client)}
+            ${field('rep','المندوب',r.rep)}
+            ${field('amount','قيمة المرتجع',r.amount,'number')}
+            ${field('reason','سبب المرتجع',r.reason)}
+            ${field('date','التاريخ',r.date,'date')}
+            ${textarea('notes','ملاحظات',r.notes)}
+          </div>
+        `;
       }
 
       return '';
