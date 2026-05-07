@@ -190,6 +190,7 @@
     let chartStatus = null;
     let chartReps = null;
     let deferredInstallPrompt = null;
+    let isSaving = false;
     let data = loadData();
 
     const pages = [
@@ -239,21 +240,43 @@
       return new Intl.NumberFormat('ar-EG').format(Number(n || 0));
     }
 
-    function userDataRef(){
-      if (!currentFirebaseUser) return null;
-      return db.ref("crmData/" + currentFirebaseUser.uid);
+    function teamDataRef(){
+      return db.ref("teamCRM/main");
     }
 
-    function saveData(){
+    function saveData(silent=false){
       normalizeData();
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
 
-      const ref = userDataRef();
-      if (ref) {
-        ref.set(data).catch(() => {
-          toast('تم الحفظ محليًا فقط، تحقق من قواعد Firebase', 'error');
+      isSaving = true;
+
+      teamDataRef().set(data)
+        .then(() => {
+          isSaving = false;
+          if(!silent) toast("تم الحفظ والمزامنة");
+        })
+        .catch(() => {
+          isSaving = false;
+          if(!silent) toast("تم الحفظ محليًا فقط", "error");
         });
-      }
+    }
+
+    function startRealtimeSync(){
+      teamDataRef().on("value", snapshot => {
+        if(isSaving) return;
+
+        if(snapshot.exists()){
+          data = snapshot.val();
+          normalizeData();
+          localStorage.setItem(STORE_KEY, JSON.stringify(data));
+          buildNav();
+          render();
+        } else {
+          data = loadData();
+          normalizeData();
+          saveData(true);
+        }
+      });
     }
 
     function loadData(){
@@ -319,34 +342,16 @@ function login(){
     }
 
     auth.onAuthStateChanged((user) => {
-      currentFirebaseUser = user || null;
+      if(user){
+        currentFirebaseUser = user;
 
-      if (user) {
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
 
-        Promise.all([db.ref("users/" + user.uid).once("value"), db.ref("crmData/" + user.uid).once("value")])
-          .then(([userSnap, snapshot]) => {
-            currentRole = userSnap.val()?.role || 'user';
-            if (snapshot.exists()) {
-              data = snapshot.val();
-            } else {
-              data = loadData();
-              return db.ref("crmData/" + user.uid).set(data);
-            }
-          })
-          .then(() => {
-            normalizeData();
-            buildNav();
-            render();
-          })
-          .catch(() => {
-            data = loadData();
-            buildNav();
-            render();
-            toast('تعذر تحميل بيانات Firebase، تم تشغيل البيانات المحلية', 'error');
-          });
-
+        db.ref("users/" + user.uid).once("value").then(userSnap => {
+          currentRole = userSnap.val()?.role || "user";
+          startRealtimeSync();
+        });
       } else {
         document.getElementById("loginScreen").classList.remove("hidden");
         document.getElementById("app").classList.add("hidden");
