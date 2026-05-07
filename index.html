@@ -98,7 +98,7 @@
         CRM-PROO
       </div>
 
-      <input id="search" class="input max-w-md mr-auto" placeholder="بحث في العملاء والصفقات..." oninput="render()">
+      <input id="search" class="input max-w-md mr-auto" placeholder="بحث في العملاء والميعات..." oninput="render()">
 
       <button class="btn btn-soft" onclick="installPWA()"><i class="fa-solid fa-mobile-screen"></i><span class="hidden md:inline">تثبيت</span></button>
       <button class="btn btn-soft" onclick="manualBackup()"><i class="fa-solid fa-cloud-arrow-down"></i><span class="hidden md:inline">Backup</span></button>
@@ -182,7 +182,7 @@
 
     const pages = [
       { id:'dashboard', label:'لوحة التحكم', icon:'fa-chart-pie' },
-      { id:'deals', label:'الصفقات', icon:'fa-handshake' },
+      { id:'deals', label:'المبيعات', icon:'fa-handshake' },
       { id:'contacts', label:'العملاء', icon:'fa-address-book' },
       { id:'products', label:'المنتجات', icon:'fa-box-open' },
       { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
@@ -391,7 +391,7 @@ function login(){
     }
 
     function getToolbar(){
-      if(currentPage === 'deals') return `<button class="btn btn-primary" onclick="openForm('deals')"><i class="fa-solid fa-plus"></i> صفقة</button>`;
+      if(currentPage === 'deals') return `<button class="btn btn-primary" onclick="openForm('deals')"><i class="fa-solid fa-plus"></i> طلبية</button>`;
       if(currentPage === 'contacts') return `<button class="btn btn-primary" onclick="openForm('contacts')"><i class="fa-solid fa-plus"></i> عميل</button>`;
       if(currentPage === 'products') return `<button class="btn btn-primary" onclick="openForm('products')"><i class="fa-solid fa-plus"></i> منتج</button>`;
       if(currentPage === 'reps') return `<button class="btn btn-primary" onclick="openForm('reps')"><i class="fa-solid fa-plus"></i> مندوب</button>`;
@@ -415,9 +415,9 @@ function login(){
       const wonDeals = data.deals.filter(d => d.status === 'done').reduce((s,d) => s + Number(d.amount || 0), 0);
 
       const cards = [
-        ['fa-handshake', 'الصفقات', data.deals.length],
+        ['fa-handshake', 'المبيعات', data.deals.length],
         ['fa-users', 'العملاء', data.contacts.length],
-        ['fa-coins', 'قيمة الصفقات', money(totalDeals) + ' ج.م'],
+        ['fa-coins', 'قيمة الميعات', money(totalDeals) + ' ج.م'],
         ['fa-check-circle', 'المكتمل', money(wonDeals) + ' ج.م']
       ];
 
@@ -433,12 +433,12 @@ function login(){
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4 mb-4">
-          <div class="card p-4"><h2 class="font-black mb-3">حالات الصفقات</h2><canvas id="statusChart" height="160"></canvas></div>
+          <div class="card p-4"><h2 class="font-black mb-3">حالات المبيعات</h2><canvas id="statusChart" height="160"></canvas></div>
           <div class="card p-4"><h2 class="font-black mb-3">مبيعات المندوبين</h2><canvas id="repChart" height="160"></canvas></div>
         </div>
         <div class="grid lg:grid-cols-2 gap-4">
           <div class="card p-4">
-            <h2 class="font-black mb-3">آخر الصفقات</h2>
+            <h2 class="font-black mb-3">آخر المبيعات</h2>
             ${data.deals.slice(-5).reverse().map(dealCard).join('') || empty('لا توجد صفقات')}
           </div>
 
@@ -590,7 +590,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function typeLabel(type){
-      return {deals:'صفقة', contacts:'عميل', products:'منتج', reps:'مندوب'}[type] || 'عنصر';
+      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب'}[type] || 'عنصر';
     }
 
     function field(name, label, value='', type='text'){
@@ -635,14 +635,14 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'deals') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('title','عنوان الصفقة',r.title)}
+            ${field('title','عنوان الطلبية',r.title)}
             ${field('client','العميل',r.client)}
             ${field('amount','المبلغ',r.amount,'number')}
             ${field('date','التاريخ',r.date,'date')}
             ${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}
             ${selectField('priority','الأولوية',r.priority || 'medium', [['high','عالية'],['medium','متوسطة'],['low','منخفضة']])}
             ${field('rep','المندوب',r.rep)}
-            ${textarea('notes','ملاحظات',r.notes)}${fileField('file','ملف أو صورة للصفقة','image/*,.pdf')}
+            ${textarea('notes','ملاحظات',r.notes)}${fileField('file','ملف أو صورة للطلبية','image/*,.pdf')}
           </div>`;
       }
 
@@ -846,7 +846,7 @@ function aiHTML(){
   const total = data.deals.reduce((s,d)=>s+Number(d.amount||0),0);
   const open = data.deals.filter(d=>d.status==='new'||d.status==='progress');
   const topRep = [...data.reps].sort((a,b)=>Number(b.sales||0)-Number(a.sales||0))[0];
-  return `<div class="card p-5 max-w-3xl"><h2 class="font-black text-xl mb-3"><i class="fa-solid fa-robot text-[#2d9cdb]"></i> CRM AI Assistant</h2><div class="grid gap-3 text-sm leading-7"><div class="p-3 rounded-xl bg-[#111d35]">إجمالي قيمة الصفقات: <b>${money(total)} ج.م</b></div><div class="p-3 rounded-xl bg-[#111d35]">الصفقات المفتوحة: <b>${open.length}</b>. ركّز على الصفقات ذات الأولوية العالية أولًا.</div><div class="p-3 rounded-xl bg-[#111d35]">أفضل مندوب حاليًا: <b>${escapeHTML(topRep?.name || 'غير متاح')}</b>.</div><div class="p-3 rounded-xl bg-[#111d35]">اقتراح: استخدم زر واتساب للعملاء الجدد وسجل ملاحظات المتابعة.</div></div><button class="btn btn-primary mt-4" onclick="addNotification('راجع اقتراحات AI Assistant اليوم'); saveData(); render();"><i class="fa-solid fa-bell"></i> أضف تذكير</button></div>`;
+  return `<div class="card p-5 max-w-3xl"><h2 class="font-black text-xl mb-3"><i class="fa-solid fa-robot text-[#2d9cdb]"></i> CRM AI Assistant</h2><div class="grid gap-3 text-sm leading-7"><div class="p-3 rounded-xl bg-[#111d35]">إجمالي قيمة المبيعات: <b>${money(total)} ج.م</b></div><div class="p-3 rounded-xl bg-[#111d35]">المبيعات المفتوحة: <b>${open.length}</b>. ركّز على المبيعات ذات الأولوية العالية أولًا.</div><div class="p-3 rounded-xl bg-[#111d35]">أفضل مندوب حاليًا: <b>${escapeHTML(topRep?.name || 'غير متاح')}</b>.</div><div class="p-3 rounded-xl bg-[#111d35]">اقتراح: استخدم زر واتساب للعملاء الجدد وسجل ملاحظات المتابعة.</div></div><button class="btn btn-primary mt-4" onclick="addNotification('راجع اقتراحات AI Assistant اليوم'); saveData(); render();"><i class="fa-solid fa-bell"></i> أضف تذكير</button></div>`;
 }
 
 function makeMeAdmin(){
