@@ -195,19 +195,32 @@
 
     const pages = [
       { id:'dashboard', label:'لوحة التحكم', icon:'fa-chart-pie' },
+      { id:'pipeline', label:'Pipeline', icon:'fa-diagram-project' },
       { id:'deals', label:'المبيعات', icon:'fa-handshake' },
       { id:'contacts', label:'العملاء', icon:'fa-address-book' },
       { id:'products', label:'المنتجات', icon:'fa-box-open' },
       { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
       { id:'returns', label:'المرتجعات', icon:'fa-rotate-left' },
+      { id:'inventory', label:'المخزون', icon:'fa-warehouse' },
+      { id:'collections', label:'التحصيلات', icon:'fa-money-bill-wave' },
       { id:'followups', label:'المتابعات', icon:'fa-calendar-check' },
       { id:'interactions', label:'التفاعلات', icon:'fa-comments' },
       { id:'tickets', label:'تذاكر الدعم', icon:'fa-headset' },
+      { id:'telesales', label:'TeleSales', icon:'fa-phone-volume' },
       { id:'kpi', label:'KPI', icon:'fa-bullseye' },
       { id:'notifications', label:'الإشعارات', icon:'fa-bell' },
       { id:'ai', label:'AI Assistant', icon:'fa-robot' },
       { id:'settings', label:'الإعدادات', icon:'fa-gear' }
     ];
+
+    const pipelineStages = ['lead', 'qualified', 'opportunity', 'won', 'lost'];
+    const stageLabels = {
+      lead: 'عميل محتمل',
+      qualified: 'عميل مؤهل',
+      opportunity: 'فرصة بيع',
+      won: 'مكتسب',
+      lost: 'مفقود'
+    };
 
     function defaults(){
       return {
@@ -254,15 +267,35 @@
             notes: ""
           }
         ],
+        inventoryMovements: [
+          {
+            id: uid(),
+            type: "sale",
+            product: "باقة صيانة",
+            quantity: 2,
+            date: "2026-05-07",
+            reference: "صفقة ERP"
+          }
+        ],
+        collections: [
+          {
+            id: uid(),
+            client: "سارة أحمد",
+            amount: 50000,
+            method: "cash",
+            date: "2026-05-07",
+            notes: "تحصيل جزئي"
+          }
+        ],
         contacts: [
-          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', status:'lead', notes:'عميل مهم', photo:'' },
-          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', status:'active', notes:'', photo:'' },
-          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', status:'qualified', notes:'', photo:'' }
+          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', status:'lead', notes:'عميل مهم', photo:'', timeline:[], location:{lat:30.0444, lng:31.2357} },
+          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', status:'active', notes:'', photo:'', timeline:[], location:{lat:30.0131, lng:31.0089} },
+          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', status:'qualified', notes:'', photo:'', timeline:[], location:{lat:31.2001, lng:29.9187} }
         ],
         deals: [
-          { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'', file:'' },
-          { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'', file:'' },
-          { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'', file:'' }
+          { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'', file:'', stage:'lead' },
+          { id: uid(), title:'نظام ERP', client:'محمد علي', amount:450000, status:'progress', priority:'high', date:'2026-05-12', rep:'منى حسن', notes:'', file:'', stage:'opportunity' },
+          { id: uid(), title:'تصميم موقع', client:'فاطمة حسن', amount:35000, status:'done', priority:'low', date:'2026-04-20', rep:'أحمد سالم', notes:'', file:'', stage:'won' }
         ],
         products: [
           { id: uid(), name:'باقة صيانة', sku:'SRV-001', category:'خدمات', price:5000, stock:50, photo:'' },
@@ -270,8 +303,8 @@
           { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999, photo:'' }
         ],
         reps: [
-          { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5 },
-          { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4 }
+          { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5, permissions:{contacts:true, deals:true, returns:false, inventory:false, reports:true, delete:false, admin:false} },
+          { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4, permissions:{contacts:true, deals:true, returns:true, inventory:true, reports:true, delete:false, admin:false} }
         ],
         notifications: [
           { id: uid(), text:'مرحبًا بك في CRM-PROO Ultimate', time: Date.now(), read:false }
@@ -347,8 +380,17 @@
       data.products ||= [];
       data.reps ||= [];
       data.notifications ||= [];
+      data.inventoryMovements ||= [];
+      data.collections ||= [];
       data.meta ||= { lastBackup:null };
     }
+
+    function can(permission){
+      const userPerms = currentUserData?.permissions || {};
+      return userPerms[permission] === true;
+    }
+
+    let currentUserData = null;
 
 function login(){
   const email = document.getElementById("username").value.trim();
@@ -469,11 +511,14 @@ function login(){
       if(currentPage === 'followups') return `<button class="btn btn-primary" onclick="openForm('followups')"><i class="fa-solid fa-plus"></i> متابعة</button>`;
       if(currentPage === 'interactions') return `<button class="btn btn-primary" onclick="openForm('interactions')"><i class="fa-solid fa-plus"></i> تفاعل</button>`;
       if(currentPage === 'tickets') return `<button class="btn btn-primary" onclick="openForm('tickets')"><i class="fa-solid fa-plus"></i> تذكرة</button>`;
+      if(currentPage === 'inventory') return `<button class="btn btn-primary" onclick="openForm('inventory')"><i class="fa-solid fa-plus"></i> حركة مخزون</button>`;
+      if(currentPage === 'collections') return `<button class="btn btn-primary" onclick="openForm('collections')"><i class="fa-solid fa-plus"></i> تحصيل</button>`;
       return '';
     }
 
     function getContent(){
       if(currentPage === 'dashboard') return dashboardHTML();
+      if(currentPage === 'pipeline') return pipelineHTML();
       if(currentPage === 'deals') return tableHTML('deals');
       if(currentPage === 'contacts') return tableHTML('contacts');
       if(currentPage === 'products') return tableHTML('products');
@@ -482,6 +527,9 @@ function login(){
       if(currentPage === 'followups') return tableHTML('followups');
       if(currentPage === 'interactions') return tableHTML('interactions');
       if(currentPage === 'tickets') return tableHTML('tickets');
+      if(currentPage === 'inventory') return tableHTML('inventory');
+      if(currentPage === 'collections') return tableHTML('collections');
+      if(currentPage === 'telesales') return teleSalesHTML();
       if(currentPage === 'kpi') return kpiHTML();
       if(currentPage === 'notifications') return notificationsHTML();
       if(currentPage === 'ai') return aiHTML();
@@ -609,6 +657,16 @@ function login(){
           keys:['client','subject','priority','status','date','notes'],
           search:['client','subject','priority','status'],
           heads:['العميل','الموضوع','الأولوية','الحالة','التاريخ','ملاحظات']
+        },
+        inventory: {
+          keys:['product','type','quantity','date','reference'],
+          search:['product','type','reference'],
+          heads:['المنتج','النوع','الكمية','التاريخ','المرجع']
+        },
+        collections: {
+          keys:['client','amount','method','date','notes'],
+          search:['client','method','notes'],
+          heads:['العميل','المبلغ','الطريقة','التاريخ','الملاحظات']
         }
       }[type];
 
@@ -861,6 +919,40 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
             ${field('rep','المندوب',r.rep)}
             ${field('amount','قيمة المرتجع',r.amount,'number')}
             ${field('reason','سبب المرتجع',r.reason)}
+            ${field('date','التاريخ',r.date,'date')}
+            ${textarea('notes','ملاحظات',r.notes)}
+          </div>
+        `;
+      }
+
+      if(type === 'inventory') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('product','المنتج',r.product)}
+            ${selectField('type','نوع الحركة',r.type || 'sale', [
+              ['sale','بيع'],
+              ['return','مرتجع'],
+              ['stock_in','استقبال'],
+              ['stock_out','صرف']
+            ])}
+            ${field('quantity','الكمية',r.quantity,'number')}
+            ${field('date','التاريخ',r.date,'date')}
+            ${field('reference','المرجع',r.reference)}
+          </div>
+        `;
+      }
+
+      if(type === 'collections') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('client','العميل',r.client)}
+            ${field('amount','المبلغ',r.amount,'number')}
+            ${selectField('method','طريقة الدفع',r.method || 'cash', [
+              ['cash','نقد'],
+              ['check','شيك'],
+              ['bank_transfer','تحويل بنكي'],
+              ['credit_card','بطاقة']
+            ])}
             ${field('date','التاريخ',r.date,'date')}
             ${textarea('notes','ملاحظات',r.notes)}
           </div>
