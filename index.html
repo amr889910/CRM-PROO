@@ -200,6 +200,9 @@
       { id:'products', label:'المنتجات', icon:'fa-box-open' },
       { id:'reps', label:'المندوبين', icon:'fa-user-tie' },
       { id:'returns', label:'المرتجعات', icon:'fa-rotate-left' },
+      { id:'followups', label:'المتابعات', icon:'fa-calendar-check' },
+      { id:'interactions', label:'التفاعلات', icon:'fa-comments' },
+      { id:'tickets', label:'تذاكر الدعم', icon:'fa-headset' },
       { id:'kpi', label:'KPI', icon:'fa-bullseye' },
       { id:'notifications', label:'الإشعارات', icon:'fa-bell' },
       { id:'ai', label:'AI Assistant', icon:'fa-robot' },
@@ -208,6 +211,38 @@
 
     function defaults(){
       return {
+        followups: [
+             {
+            id: uid(),
+            client: "سارة أحمد",
+            method: "call",
+            date: "2026-05-08",
+            time: "12:00",
+            note: "متابعة عرض السعر",
+            status: "pending"
+             }
+        ],
+        interactions: [
+            {
+            id: uid(),
+            client: "سارة أحمد",
+            channel: "whatsapp",
+            type: "متابعة",
+            summary: "تم إرسال رسالة واتساب للعميل",
+            date: "2026-05-07"
+            }
+        ],
+        tickets: [
+            {
+            id: uid(),
+            client: "سارة أحمد",
+             subject: "مشكلة في الخدمة",
+             priority: "medium",
+             status: "open",
+             date: "2026-05-07",
+             notes: ""
+            }
+        ],
         returns: [
           {
             id: uid(),
@@ -220,9 +255,9 @@
           }
         ],
         contacts: [
-          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', notes:'عميل مهم', photo:'' },
-          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', notes:'', photo:'' },
-          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', notes:'', photo:'' }
+          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', status:'lead', notes:'عميل مهم', photo:'' },
+          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', status:'active', notes:'', photo:'' },
+          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', status:'qualified', notes:'', photo:'' }
         ],
         deals: [
           { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'', file:'' },
@@ -242,6 +277,7 @@
           { id: uid(), text:'مرحبًا بك في CRM-PROO Ultimate', time: Date.now(), read:false }
         ],
         meta: { lastBackup: null }
+        
       };
     }
 
@@ -302,6 +338,9 @@
     }
 
     function normalizeData(){
+      data.followups ||= [];
+      data.interactions ||= [];
+      data.tickets ||= [];
       data.returns ||= [];
       data.contacts ||= [];
       data.deals ||= [];
@@ -427,6 +466,9 @@ function login(){
       if(currentPage === 'products') return `<button class="btn btn-primary" onclick="openForm('products')"><i class="fa-solid fa-plus"></i> منتج</button>`;
       if(currentPage === 'reps') return `<button class="btn btn-primary" onclick="openForm('reps')"><i class="fa-solid fa-plus"></i> مندوب</button>`;
       if(currentPage === 'returns') return `<button class="btn btn-primary" onclick="openForm('returns')"><i class="fa-solid fa-plus"></i> مرتجع</button>`;
+      if(currentPage === 'followups') return `<button class="btn btn-primary" onclick="openForm('followups')"><i class="fa-solid fa-plus"></i> متابعة</button>`;
+      if(currentPage === 'interactions') return `<button class="btn btn-primary" onclick="openForm('interactions')"><i class="fa-solid fa-plus"></i> تفاعل</button>`;
+      if(currentPage === 'tickets') return `<button class="btn btn-primary" onclick="openForm('tickets')"><i class="fa-solid fa-plus"></i> تذكرة</button>`;
       return '';
     }
 
@@ -437,6 +479,9 @@ function login(){
       if(currentPage === 'products') return tableHTML('products');
       if(currentPage === 'reps') return tableHTML('reps');
       if(currentPage === 'returns') return tableHTML('returns');
+      if(currentPage === 'followups') return tableHTML('followups');
+      if(currentPage === 'interactions') return tableHTML('interactions');
+      if(currentPage === 'tickets') return tableHTML('tickets');
       if(currentPage === 'kpi') return kpiHTML();
       if(currentPage === 'notifications') return notificationsHTML();
       if(currentPage === 'ai') return aiHTML();
@@ -531,9 +576,9 @@ function login(){
           heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب']
         },
         contacts: {
-          keys:['photo','name','phone','email','company','zone','group'],
-          search:['name','phone','email','company'],
-          heads:['صورة','الاسم','الهاتف','الإيميل','الشركة','المنطقة','المجموعة']
+          keys:['photo','name','phone','email','company','status','zone','group'],
+          search:['name','phone','email','company','status'],
+          heads:['صورة','الاسم','الهاتف','الإيميل','الشركة','الحالة','المنطقة','المجموعة']
         },
         products: {
           keys:['photo','name','sku','category','price','stock'],
@@ -549,6 +594,21 @@ function login(){
           keys:['client','rep','amount','reason','date','notes'],
           search:['client','rep','reason'],
           heads:['العميل','المندوب','المبلغ','السبب','التاريخ','ملاحظات']
+        },
+        followups: {
+          keys:['client','method','date','time','note','status'],
+          search:['client','method','note','status'],
+          heads:['العميل','الطريقة','التاريخ','الوقت','الملاحظة','الحالة']
+        },
+        interactions: {
+          keys:['client','channel','type','summary','date'],
+          search:['client','channel','type','summary'],
+          heads:['العميل','القناة','النوع','الملخص','التاريخ']
+        },
+        tickets: {
+          keys:['client','subject','priority','status','date','notes'],
+          search:['client','subject','priority','status'],
+          heads:['العميل','الموضوع','الأولوية','الحالة','التاريخ','ملاحظات']
         }
       }[type];
 
@@ -584,7 +644,11 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     function cell(type, key, value){
       if(key === 'photo') return value ? `<img class="mini-img" src="${value}">` : `<div class="mini-img"><i class="fa-solid fa-image text-slate-500"></i></div>`;
       if(key === 'amount' || key === 'price' || key === 'target' || key === 'sales' || key === 'collected') return money(value);
+      if(type === 'contacts' && key === 'status') return customerStatusLabel(value);
       if(key === 'status') return `<span class="badge ${statusClass(value)}">${statusLabel(value)}</span>`;
+      if(type === 'followups' && key === 'method') return methodLabel(value);
+      if(type === 'followups' && key === 'status') return followupStatusLabel(value);
+      if(type === 'interactions' && key === 'channel') return channelLabel(value);
       if(key === 'priority') return priorityLabel(value);
       return escapeHTML(value ?? '');
     }
@@ -629,7 +693,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function typeLabel(type){
-      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب', returns:'مرتجع'}[type] || 'عنصر';
+      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب', returns:'مرتجع', followups:'متابعة', interactions:'تفاعل', tickets:'تذكرة دعم'}[type] || 'عنصر';
     }
 
     function field(name, label, value='', type='text'){
@@ -692,10 +756,79 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
             ${field('phone','الهاتف',r.phone)}
             ${field('email','الإيميل',r.email,'email')}
             ${field('company','الشركة',r.company)}
+            ${selectField('status','حالة العميل',r.status || 'lead', [
+              ['lead','عميل محتمل'],
+              ['qualified','عميل مؤهل'],
+              ['opportunity','فرصة بيع'],
+              ['active','عميل فعلي'],
+              ['inactive','غير نشط / مفقود']
+            ])}
             ${field('zone','المنطقة',r.zone)}
             ${field('group','المجموعة',r.group)}
             ${textarea('notes','ملاحظات',r.notes)}${fileField('photo','صورة العميل','image/*')}
           </div>`;
+      }
+
+      if(type === 'followups') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('client','العميل',r.client)}
+            ${selectField('method','طريقة المتابعة',r.method || 'call', [
+              ['call','مكالمة'],
+              ['whatsapp','واتساب'],
+              ['email','بريد إلكتروني'],
+              ['meeting','اجتماع']
+            ])}
+            ${field('date','التاريخ',r.date,'date')}
+            ${field('time','الوقت',r.time,'time')}
+            ${textarea('note','ملاحظة المتابعة',r.note)}
+            ${selectField('status','الحالة',r.status || 'pending', [
+              ['pending','قيد الانتظار'],
+              ['done','تمت'],
+              ['missed','فاتت']
+            ])}
+          </div>
+        `;
+      }
+
+      if(type === 'interactions') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('client','العميل',r.client)}
+            ${selectField('channel','القناة',r.channel || 'whatsapp', [
+              ['whatsapp','واتساب'],
+              ['phone','هاتف'],
+              ['email','بريد إلكتروني'],
+              ['facebook','فيسبوك'],
+              ['instagram','إنستجرام'],
+              ['other','أخرى']
+            ])}
+            ${field('type','نوع التفاعل',r.type)}
+            ${field('date','التاريخ',r.date,'date')}
+            ${textarea('summary','ملخص التفاعل',r.summary)}
+          </div>
+        `;
+      }
+
+      if(type === 'tickets') {
+        return `
+          <div class="grid md:grid-cols-2 gap-3">
+            ${field('client','العميل',r.client)}
+            ${field('subject','موضوع التذكرة',r.subject)}
+            ${selectField('priority','الأولوية',r.priority || 'medium', [
+              ['high','عالية'],
+              ['medium','متوسطة'],
+              ['low','منخفضة']
+            ])}
+            ${selectField('status','حالة التذكرة',r.status || 'open', [
+              ['open','مفتوحة'],
+              ['progress','قيد الحل'],
+              ['closed','مغلقة']
+            ])}
+            ${field('date','التاريخ',r.date,'date')}
+            ${textarea('notes','ملاحظات',r.notes)}
+          </div>
+        `;
       }
 
       if(type === 'products') {
@@ -894,7 +1027,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
               ...row
             }));
 
-            if(cleanName === "contacts" || cleanName === "customers" || cleanName === "clients" || cleanName === "العملاء"){
+            if(cleanName === "contacts" || cleanName === "customers" || cleanName === "lead" || cleanName === "clients" || cleanName === "العملاء"){
               imported.contacts = fixedRows;
             }
 
@@ -1041,6 +1174,44 @@ function getNetSalesByClient(client){
   const returns = getReturnTotalByClient(client);
 
   return sales - returns;
+}
+
+function customerStatusLabel(s){
+  return {
+    lead:'عميل محتمل',
+    qualified:'عميل مؤهل',
+    opportunity:'فرصة بيع',
+    active:'عميل فعلي',
+    inactive:'غير نشط / مفقود'
+  }[s] || s;
+}
+
+function followupStatusLabel(s){
+  return {
+    pending:'قيد الانتظار',
+    done:'تمت',
+    missed:'فاتت'
+  }[s] || s;
+}
+
+function methodLabel(s){
+  return {
+    call:'مكالمة',
+    whatsapp:'واتساب',
+    email:'بريد إلكتروني',
+    meeting:'اجتماع'
+  }[s] || s;
+}
+
+function channelLabel(s){
+  return {
+    whatsapp:'واتساب',
+    phone:'هاتف',
+    email:'بريد إلكتروني',
+    facebook:'فيسبوك',
+    instagram:'إنستجرام',
+    other:'أخرى'
+  }[s] || s;
 }
 
 function kpiHTML(){
