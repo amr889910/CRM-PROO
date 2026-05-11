@@ -751,7 +751,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function typeLabel(type){
-      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب', returns:'مرتجع', followups:'متابعة', interactions:'تفاعل', tickets:'تذكرة دعم'}[type] || 'عنصر';
+      return {deals:'طلبية', contacts:'عميل', products:'منتج', reps:'مندوب', returns:'مرتجع', followups:'متابعة', interactions:'تفاعل', tickets:'تذكرة دعم', inventory:'حركة مخزون', collections:'تحصيل'}[type] || 'عنصر';
     }
 
     function field(name, label, value='', type='text'){
@@ -1394,6 +1394,150 @@ function kpiHTML(){
   `;
 }
 
-  </script>
+function pipelineHTML(){
+  return `
+    <div class="grid grid-cols-5 gap-3">
+      ${pipelineStages.map(stage => {
+        const deals = (data.deals || []).filter(d => d.stage === stage);
+        return `
+          <div class="bg-[#111d35] rounded-lg p-3 border border-slate-700 min-h-[500px]">
+            <h3 class="font-black text-sm mb-3 text-slate-300">${stageLabels[stage]}</h3>
+            <div class="space-y-2" ondrop="dropDeal(event, '${stage}')" ondragover="dragOver(event)">
+              ${deals.map(deal => `
+                <div draggable="true" ondragstart="dragDeal(event)" class="bg-[#0c1527] border border-[#2d9cdb] rounded p-2 cursor-move hover:shadow-lg transition">
+                  <div class="font-bold text-xs text-[#2d9cdb]">${escapeHTML(deal.title)}</div>
+                  <div class="text-xs text-slate-400 mt-1">${escapeHTML(deal.client)}</div>
+                  <div class="font-black text-xs mt-2 text-green-400">${money(deal.amount)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function dragDeal(e){
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('dealId', e.target.closest('[draggable]').dataset.id || '');
+}
+
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dropDeal(e, stage){
+  e.preventDefault();
+  const dealId = e.dataTransfer.getData('dealId');
+  const deal = data.deals.find(d => d.id === dealId);
+  if(deal){
+    deal.stage = stage;
+    saveData();
+    render();
+    toast(`تم نقل الصفقة إلى ${stageLabels[stage]}`);
+  }
+}
+
+function addTimeline(clientId, type, text){
+  const client = data.contacts.find(c => c.id === clientId);
+  if(!client) return;
+  if(!client.timeline) client.timeline = [];
+  client.timeline.unshift({
+    id: uid(),
+    type,
+    text,
+    date: Date.now()
+  });
+  saveData();
+}
+
+function teleSalesHTML(){
+  const today = new Date().toDateString();
+  const todayFollowups = (data.followups || []).filter(f => new Date(f.date).toDateString() === today).length;
+  const todayInteractions = (data.interactions || []).filter(i => i.date && new Date(i.date).toDateString() === today).length;
+  
+  const closedToday = (data.deals || []).filter(d => d.status === 'done' && d.date && new Date(d.date).toDateString() === today).length;
+  const conversionToday = todayFollowups > 0 ? Math.round((closedToday / todayFollowups) * 100) : 0;
+
+  const topAgent = [...(data.reps || [])].sort((a,b) => Number(b.sales||0) - Number(a.sales||0))[0];
+  const pendingFollowups = (data.followups || []).filter(f => f.status === 'pending').length;
+
+  return `
+    <div class="grid md:grid-cols-3 gap-3 mb-4">
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">المتابعات اليوم</div>
+        <div class="text-2xl font-black text-[#2d9cdb]">${todayFollowups}</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">معدل التحويل</div>
+        <div class="text-2xl font-black text-yellow-400">${conversionToday}%</div>
+      </div>
+      <div class="card p-4">
+        <div class="text-sm text-slate-400">المتابعات المعلقة</div>
+        <div class="text-2xl font-black text-red-400">${pendingFollowups}</div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-3">
+      <div class="card p-4">
+        <h3 class="font-black mb-3">أفضل موظف</h3>
+        <div class="text-lg font-bold text-[#2d9cdb]">${escapeHTML(topAgent?.name || 'N/A')}</div>
+        <div class="text-sm text-slate-400">المبيعات: ${money(topAgent?.sales || 0)}</div>
+      </div>
+
+      <div class="card p-4">
+        <h3 class="font-black mb-3">المتابعات المعلقة</h3>
+        ${(data.followups || []).filter(f => f.status === 'pending').slice(0, 5).map(f => `
+          <div class="text-sm py-1">• ${escapeHTML(f.client)} - ${new Date(f.date).toLocaleDateString('ar-EG')}</div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function clientDebt(clientName){
+  const sales = (data.deals || [])
+    .filter(d => d.client === clientName && d.status === 'done')
+    .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+  
+  const collections = (data.collections || [])
+    .filter(c => c.client === clientName)
+    .reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  
+  return sales - collections;
+}
+
+function generateQuotePDF(deal){
+  if(!window.jspdf) return toast('مكتبة PDF غير محملة', 'error');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+  pdf.text('CRM-PROO - عرض سعر', 20, 20);
+  pdf.text(`العميل: ${deal.client}`, 20, 40);
+  pdf.text(`الموضوع: ${deal.title}`, 20, 50);
+  pdf.text(`المبلغ: ${money(deal.amount)} ج.م`, 20, 60);
+  pdf.text(`التاريخ: ${new Date(deal.date).toLocaleDateString('ar-EG')}`, 20, 70);
+  pdf.save(`quote-${deal.client}.pdf`);
+  toast('تم تحميل عرض السعر');
+}
+
+function generateDailyReport(){
+  const report = `
+📊 تقرير يومي - ${new Date().toLocaleDateString('ar-EG')}
+
+👥 إجمالي العملاء: ${data.contacts.length}
+💼 إجمالي الصفقات: ${data.deals.length}
+✅ الصفقات المكتملة: ${data.deals.filter(d => d.status === 'done').length}
+💰 إجمالي المبيعات: ${money((data.deals || []).filter(d => d.status === 'done').reduce((s,d) => s + Number(d.amount || 0), 0))} ج.م
+📦 المرتجعات: ${money((data.returns || []).reduce((s,r) => s + Number(r.amount || 0), 0))} ج.م
+`;
+  console.log(report);
+  addNotification(`تم إنشاء تقرير يومي: ${data.contacts.length} عميل`);
+}
+
+setInterval(generateDailyReport, 86400000);
+
+
   </body>
   </html>
