@@ -373,17 +373,19 @@
     }
 
     function normalizeData(){
-      data.followups ||= [];
-      data.interactions ||= [];
-      data.tickets ||= [];
-      data.returns ||= [];
       data.contacts ||= [];
       data.deals ||= [];
       data.products ||= [];
       data.reps ||= [];
-      data.notifications ||= [];
-      data.inventoryMovements ||= [];
+      data.returns ||= [];
       data.collections ||= [];
+      data.inventoryMovements ||= [];
+      data.followups ||= [];
+      data.interactions ||= [];
+      data.tickets ||= [];
+      data.notifications ||= [];
+      data.telesales ||= [];
+      data.permissions ||= {};
       data.meta ||= { lastBackup:null };
     }
 
@@ -613,6 +615,8 @@ window.register = function(){
     }
 
     function tableHTML(type){
+      data[type] ||= [];
+
       const config = {
         deals: {
           keys:['title','client','amount','status','priority','date','rep'],
