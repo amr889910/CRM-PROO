@@ -288,9 +288,9 @@
           }
         ],
         contacts: [
-          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', status:'lead', notes:'عميل مهم', photo:'', timeline:[], location:{lat:30.0444, lng:31.2357} },
-          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', status:'active', notes:'', photo:'', timeline:[], location:{lat:30.0131, lng:31.0089} },
-          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', status:'qualified', notes:'', photo:'', timeline:[], location:{lat:31.2001, lng:29.9187} }
+          { id: uid(), name:'سارة أحمد', phone:'01012345678', email:'sara@example.com', company:'شركة النور', zone:'القاهرة', group:'VIP', status:'lead', salesRep:'أحمد سالم', collector:'محمد خالد', telesales:'منة الله', accountManager:'أحمد سالم', notes:'عميل مهم', photo:'', timeline:[], location:{lat:30.0444, lng:31.2357} },
+          { id: uid(), name:'محمد علي', phone:'01198765432', email:'mohamed@example.com', company:'تك سوليوشنز', zone:'الجيزة', group:'عادي', status:'active', salesRep:'منى حسن', collector:'', telesales:'', accountManager:'منى حسن', notes:'', photo:'', timeline:[], location:{lat:30.0131, lng:31.0089} },
+          { id: uid(), name:'فاطمة حسن', phone:'01234567890', email:'fatma@example.com', company:'مجموعة التجارة', zone:'الإسكندرية', group:'جديد', status:'qualified', salesRep:'أحمد سالم', collector:'محمد خالد', telesales:'', accountManager:'أحمد سالم', notes:'', photo:'', timeline:[], location:{lat:31.2001, lng:29.9187} }
         ],
         deals: [
           { id: uid(), title:'عقد صيانة سنوي', client:'سارة أحمد', amount:150000, status:'new', priority:'high', date:'2026-05-06', rep:'أحمد سالم', notes:'', file:'', stage:'lead' },
@@ -303,8 +303,10 @@
           { id: uid(), name:'استضافة سنوية', sku:'HST-001', category:'استضافة', price:3000, stock:999, photo:'' }
         ],
         reps: [
-          { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5, permissions:{contacts:true, deals:true, returns:false, inventory:false, reports:true, delete:false, admin:false} },
-          { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4, permissions:{contacts:true, deals:true, returns:true, inventory:true, reports:true, delete:false, admin:false} }
+          { id: uid(), name:'أحمد سالم', phone:'01055555555', target:300000, sales:185000, collected:140000, commission:5, role:'sales', permissions:{contacts:true, deals:true, returns:false, inventory:false, reports:true, delete:false, admin:false} },
+          { id: uid(), name:'منى حسن', phone:'01166666666', target:250000, sales:450000, collected:300000, commission:4, role:'sales', permissions:{contacts:true, deals:true, returns:true, inventory:true, reports:true, delete:false, admin:false} },
+          { id: uid(), name:'محمد خالد', phone:'01088888888', target:200000, sales:0, collected:180000, commission:3, role:'collector', permissions:{contacts:true, deals:false, returns:false, inventory:false, reports:true, delete:false, admin:false} },
+          { id: uid(), name:'منة الله', phone:'01099999999', target:150000, sales:0, collected:0, commission:2, role:'telesales', permissions:{contacts:true, deals:false, returns:false, inventory:false, reports:true, delete:false, admin:false} }
         ],
         notifications: [
           { id: uid(), text:'مرحبًا بك في CRM-PROO Ultimate', time: Date.now(), read:false }
@@ -618,9 +620,9 @@ window.register = function(){
           heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب']
         },
         contacts: {
-          keys:['photo','name','phone','email','company','status','zone','group'],
-          search:['name','phone','email','company','status'],
-          heads:['صورة','الاسم','الهاتف','الإيميل','الشركة','الحالة','المنطقة','المجموعة']
+          keys:['photo','name','phone','company','salesRep','collector','telesales','accountManager','status'],
+          search:['name','phone','company','salesRep','collector','telesales','accountManager','status'],
+          heads:['صورة','الاسم','الهاتف','الشركة','مندوب المبيعات','المحصل','تيلي سيلز','مسؤول العميل','الحالة']
         },
         products: {
           keys:['photo','name','sku','category','price','stock'],
@@ -817,6 +819,10 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
             ])}
             ${field('zone','المنطقة',r.zone)}
             ${field('group','المجموعة',r.group)}
+            ${selectField('salesRep','مندوب المبيعات',r.salesRep || '', data.reps.filter(rep => rep.role === 'sales').map(rep => [rep.name, rep.name]))}
+            ${selectField('collector','مندوب التحصيل',r.collector || '', data.reps.filter(rep => rep.role === 'collector').map(rep => [rep.name, rep.name]))}
+            ${selectField('telesales','موظف التيلي سيلز',r.telesales || '', data.reps.filter(rep => rep.role === 'telesales').map(rep => [rep.name, rep.name]))}
+            ${selectField('accountManager','مسؤول العميل',r.accountManager || '', data.reps.map(rep => [rep.name, rep.name]))}
             ${textarea('notes','ملاحظات',r.notes)}${fileField('photo','صورة العميل','image/*')}
           </div>`;
       }
