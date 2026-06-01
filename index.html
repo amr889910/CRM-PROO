@@ -185,7 +185,9 @@
     const SUPER_ADMIN_EMAIL = "amrahmedhlmey@gmail.com";
 
     function isSuperAdmin(){
-      return currentFirebaseUser?.email === SUPER_ADMIN_EMAIL;
+      const result = currentFirebaseUser?.email === SUPER_ADMIN_EMAIL;
+      console.log("🔐 isSuperAdmin() check:", { email: currentFirebaseUser?.email, SUPER_ADMIN_EMAIL, result });
+      return result;
     }
 
     const STORE_KEY = 'crm_proo_clean_v2';
@@ -535,6 +537,7 @@ window.register = function(){
     auth.onAuthStateChanged((user) => {
       if(user){
         currentFirebaseUser = user;
+        console.log("✅ User logged in:", user.email);
 
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
@@ -542,11 +545,18 @@ window.register = function(){
         db.ref("users/" + user.uid).once("value").then(userSnap => {
           currentUserData = userSnap.val() || {};
           currentRole = currentUserData.role || "user";
+          console.log("📋 Current User Data Loaded:", { email: currentUserData.email, role: currentRole, isSuperAdmin: isSuperAdmin() });
+          startRealtimeSync();
+        }).catch(error => {
+          console.error("❌ Error loading user data:", error);
+          currentUserData = {};
           startRealtimeSync();
         });
       } else {
         document.getElementById("loginScreen").classList.remove("hidden");
         document.getElementById("app").classList.add("hidden");
+        currentUserData = null;
+        currentFirebaseUser = null;
       }
     });
 
@@ -1150,44 +1160,81 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function loadUsersPermissions(){
-      if(!isSuperAdmin()) return;
+      const container = document.getElementById('usersPermissions');
+      if(!container) {
+        console.log("⚠️ usersPermissions container not found");
+        return;
+      }
       
-      db.ref('users').once('value', snapshot => {
-        const users = snapshot.val() || {};
-        const container = document.getElementById('usersPermissions');
-        
-        if(!container) return;
-        
-        container.innerHTML = Object.entries(users).map(([uid, user]) => {
-          const perms = user.permissions || {};
-          const permKeys = ['dashboard', 'pipeline', 'deals', 'contacts', 'products', 'reps', 'returns', 'inventory', 'collections', 'followups', 'interactions', 'tickets', 'telesales', 'kpi', 'notifications', 'ai', 'settings', 'delete', 'admin'];
-          
-          return `
-            <div class="bg-[#111d35] p-3 rounded border border-slate-700">
-              <div class="font-bold mb-2 text-sm">${escapeHTML(user.email)}</div>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                ${permKeys.map(key => `
-                  <label class="flex items-center gap-2 text-xs cursor-pointer">
-                    <input type="checkbox" ${perms[key] ? 'checked' : ''} onchange="updateUserPermission('${uid}', '${key}', this.checked)">
-                    <span>${key}</span>
-                  </label>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        }).join('');
-      });
+      console.log("🔐 loadUsersPermissions() called. isSuperAdmin:", isSuperAdmin());
+      if(!isSuperAdmin()) {
+        console.log("❌ Not a Super Admin - cannot load users");
+        container.innerHTML = '<div class="text-red-500 text-center py-4">لا يوجد صلاحية للوصول لإدارة المستخدمين</div>';
+        return;
+      }
+      
+      container.innerHTML = '<div class="text-slate-400 text-center py-4">جاري التحميل...</div>';
+      
+      db.ref('users')
+        .once('value')
+        .then(snapshot => {
+          try {
+            const users = snapshot.val() || {};
+            console.log("✅ Users data loaded successfully:", Object.keys(users).length, "users");
+            
+            if(Object.keys(users).length === 0) {
+              container.innerHTML = '<div class="text-slate-400 text-center py-4">لا توجد مستخدمين</div>';
+              return;
+            }
+            
+            const permKeys = ['dashboard', 'pipeline', 'deals', 'contacts', 'products', 'reps', 'returns', 'inventory', 'collections', 'followups', 'interactions', 'tickets', 'telesales', 'kpi', 'notifications', 'ai', 'settings', 'delete', 'admin'];
+            
+            container.innerHTML = Object.entries(users).map(([uid, user]) => {
+              const perms = user.permissions || {};
+              return `
+                <div class="bg-[#111d35] p-3 rounded border border-slate-700 mb-3">
+                  <div class="font-bold mb-2 text-sm text-[#2d9cdb]">${escapeHTML(user.email)}</div>
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                    ${permKeys.map(key => `
+                      <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-[#2d9cdb]">
+                        <input type="checkbox" ${perms[key] ? 'checked' : ''} onchange="updateUserPermission('${uid}', '${key}', this.checked)">
+                        <span>${key}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          } catch(e) {
+            console.error("❌ Error processing users data:", e);
+            container.innerHTML = '<div class="text-red-500 text-center py-4">خطأ في تحميل بيانات المستخدمين</div>';
+          }
+        })
+        .catch(error => {
+          console.error("❌ Firebase error reading users:", error.code, error.message);
+          container.innerHTML = `<div class="bg-red-900/20 border border-red-700/50 rounded p-3 text-red-400 text-sm text-right">❌ <strong>لا يوجد صلاحية للوصول للمستخدمين</strong><br><small>خطأ: ${error.code || 'unknown'}</small><br><small>يرجى تحديث Firebase Security Rules</small></div>`;
+        });
     }
 
     function updateUserPermission(uid, permission, value){
-      if(!isSuperAdmin()) return;
+      if(!isSuperAdmin()) {
+        console.error("❌ updateUserPermission: Not a Super Admin");
+        toast('ليس لديك صلاحية لتعديل الصلاحيات', 'error');
+        return;
+      }
+      
+      console.log("🔄 Updating permission:", { uid, permission, value });
       
       db.ref('users/' + uid + '/permissions/' + permission).set(value ? true : false)
         .then(() => {
+          console.log("✅ Permission updated successfully");
           toast(`تم تحديث صلاحية ${permission}`);
-          loadUsersPermissions();
+          setTimeout(() => loadUsersPermissions(), 300);
         })
-        .catch(() => toast('خطأ في التحديث', 'error'));
+        .catch((error) => {
+          console.error("❌ Error updating permission:", error.code, error.message);
+          toast(`خطأ في التحديث: ${error.code}`, 'error');
+        });
     }
 
     function resetData(){
