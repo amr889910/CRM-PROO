@@ -181,6 +181,12 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
+    const SUPER_ADMIN_EMAIL = "amrahmedhlmey@gmail.com";
+
+    function isSuperAdmin(){
+      return currentFirebaseUser?.email === SUPER_ADMIN_EMAIL;
+    }
+
     const STORE_KEY = 'crm_proo_clean_v2';
 
     let currentPage = 'dashboard';
@@ -190,6 +196,7 @@
     let chartStatus = null;
     let chartReps = null;
     let deferredInstallPrompt = null;
+    let firebaseLoaded = false;
     let isSaving = false;
     let data = loadData();
 
@@ -330,18 +337,24 @@
 
     function saveData(silent=false){
       normalizeData();
+
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
+
+      if(!firebaseLoaded){
+        console.warn("Firebase not loaded yet - save skipped");
+        return;
+      }
 
       isSaving = true;
 
       teamDataRef().set(data)
         .then(() => {
           isSaving = false;
-          if(!silent) toast("تم الحفظ والمزامنة");
+          if(!silent) toast("تم الحفظ");
         })
         .catch(() => {
           isSaving = false;
-          if(!silent) toast("تم الحفظ محليًا فقط", "error");
+          toast("مشكلة في الحفظ", "error");
         });
     }
 
@@ -352,11 +365,14 @@
         if(snapshot.exists()){
           data = snapshot.val();
           normalizeData();
+          firebaseLoaded = true;
+
           localStorage.setItem(STORE_KEY, JSON.stringify(data));
+
           buildNav();
           render();
         } else {
-          data = loadData();
+          firebaseLoaded = true;
           normalizeData();
           saveData(true);
         }
@@ -387,6 +403,14 @@
       data.telesales ||= [];
       data.permissions ||= {};
       data.meta ||= { lastBackup:null };
+      data.deals.forEach(d => {
+        if(!d.stage){
+          if(d.status === "done") d.stage = "won";
+          else if(d.status === "lost") d.stage = "lost";
+          else if(d.status === "progress") d.stage = "opportunity";
+          else d.stage = "lead";
+        }
+      });
     }
 
     function can(permission){
@@ -432,6 +456,19 @@ window.register = function(){
       auth.signOut()
         .then(() => toast('تم تسجيل الخروج'))
         .catch(() => toast('حدث خطأ أثناء تسجيل الخروج', 'error'));
+    }
+
+    function updateUserRole(uid, role){
+      if(!isSuperAdmin()){
+        toast("الصلاحيات للأدمن فقط", "error");
+        return;
+      }
+
+      db.ref("users/" + uid).update({
+        role: role
+      });
+
+      toast("تم تحديث الصلاحية");
     }
 
     auth.onAuthStateChanged((user) => {
@@ -1408,7 +1445,7 @@ function pipelineHTML(){
             <h3 class="font-black text-sm mb-3 text-slate-300">${stageLabels[stage]}</h3>
             <div class="space-y-2" ondrop="dropDeal(event, '${stage}')" ondragover="dragOver(event)">
               ${deals.map(deal => `
-                <div draggable="true" ondragstart="dragDeal(event)" class="bg-[#0c1527] border border-[#2d9cdb] rounded p-2 cursor-move hover:shadow-lg transition">
+                <div draggable="true" data-id="${deal.id}" ondragstart="dragDeal(event)" class="bg-[#0c1527] border border-[#2d9cdb] rounded p-2 cursor-move hover:shadow-lg transition">
                   <div class="font-bold text-xs text-[#2d9cdb]">${escapeHTML(deal.title)}</div>
                   <div class="text-xs text-slate-400 mt-1">${escapeHTML(deal.client)}</div>
                   <div class="font-black text-xs mt-2 text-green-400">${money(deal.amount)}</div>
