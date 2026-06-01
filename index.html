@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0c1527" />
   <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22CRM-PROO%22,%22short_name%22:%22CRM-PROO%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23080e1a%22,%22theme_color%22:%22%230c1527%22}" />
+  <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%230c1527"/><text x="50" y="60" text-anchor="middle" font-size="42" fill="%232d9cdb" font-family="Arial">CRM</text></svg>'>
   <title>CRM-PROO Ultimate</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -415,12 +416,40 @@
       });
     }
 
-    function can(permission){
-      const userPerms = currentUserData?.permissions || {};
-      return userPerms[permission] === true;
+    let currentUserData = null;
+
+    function getCurrentPermissions(){
+      if(isSuperAdmin()){
+        return {
+          dashboard:true,
+          pipeline:true,
+          deals:true,
+          contacts:true,
+          products:true,
+          reps:true,
+          returns:true,
+          inventory:true,
+          collections:true,
+          followups:true,
+          interactions:true,
+          tickets:true,
+          telesales:true,
+          kpi:true,
+          notifications:true,
+          ai:true,
+          settings:true,
+          delete:true,
+          admin:true
+        };
+      }
+
+      return currentUserData?.permissions || {};
     }
 
-    let currentUserData = null;
+    function can(pageOrAction){
+      const p = getCurrentPermissions();
+      return p[pageOrAction] === true;
+    }
 
 window.login = function(){
   const email = document.getElementById("username").value.trim();
@@ -447,7 +476,37 @@ window.register = function(){
   auth.createUserWithEmailAndPassword(email, password)
     .then(cred => db.ref("users/" + cred.user.uid).set({
       email,
-      role: "user",
+      role: email === SUPER_ADMIN_EMAIL ? "admin" : "user",
+      permissions: email === SUPER_ADMIN_EMAIL ? {
+        dashboard:true,
+        pipeline:true,
+        deals:true,
+        contacts:true,
+        products:true,
+        reps:true,
+        returns:true,
+        inventory:true,
+        collections:true,
+        followups:true,
+        interactions:true,
+        tickets:true,
+        telesales:true,
+        kpi:true,
+        notifications:true,
+        ai:true,
+        settings:true,
+        delete:true,
+        admin:true
+      } : {
+        dashboard:true,
+        contacts:true,
+        deals:true,
+        followups:true,
+        interactions:true,
+        notifications:true,
+        delete:false,
+        admin:false
+      },
       createdAt: Date.now()
     }))
     .then(() => toast("تم إنشاء الحساب بنجاح"))
@@ -481,7 +540,8 @@ window.register = function(){
         document.getElementById("app").classList.remove("hidden");
 
         db.ref("users/" + user.uid).once("value").then(userSnap => {
-          currentRole = userSnap.val()?.role || "user";
+          currentUserData = userSnap.val() || {};
+          currentRole = currentUserData.role || "user";
           startRealtimeSync();
         });
       } else {
@@ -505,15 +565,22 @@ window.register = function(){
      }
 
     function buildNav(){
-      document.getElementById('nav').innerHTML = pages.map(p => `
-        <button class="nav-item ${currentPage === p.id ? 'active' : ''}" onclick="go('${p.id}')">
-          <i class="fa-solid ${p.icon} w-5"></i>
-          <span>${p.label}</span>
-        </button>
-      `).join('');
+      document.getElementById('nav').innerHTML = pages
+        .filter(p => isSuperAdmin() || can(p.id))
+        .map(p => `
+          <button class="nav-item ${currentPage === p.id ? 'active' : ''}" onclick="go('${p.id}')">
+            <i class="fa-solid ${p.icon} w-5"></i>
+            <span>${p.label}</span>
+          </button>
+        `).join('');
     }
 
     function go(page){
+      if(!isSuperAdmin() && !can(page)){
+        toast("ليس لديك صلاحية لهذه الصفحة", "error");
+        return;
+      }
+
       currentPage = page;
       buildNav();
       render();
@@ -1031,6 +1098,11 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function removeRow(type, id){
+      if(!isSuperAdmin() && !can("delete")){
+        toast("الحذف للأدمن فقط", "error");
+        return;
+      }
+
       if(!confirm('تأكيد الحذف؟')) return;
 
       data[type] = data[type].filter(x => x.id !== id);
@@ -1047,19 +1119,75 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function settingsHTML(){
-      const isAdmin = currentRole === 'admin';
-      return `<div class="grid gap-4 max-w-3xl">
+      const isSuperAdminUser = isSuperAdmin();
+      
+      let html = `<div class="grid gap-4 max-w-3xl">
         <div class="card p-4">
           <h2 class="font-black text-lg mb-3">إعدادات الحساب</h2>
           <div class="grid gap-3">
             <div><div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div><div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div></div>
-            <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${isAdmin ? 'Admin' : 'User'}</div></div>
-            <button class="btn btn-secondary w-fit" onclick="makeMeAdmin()"><i class="fa-solid fa-user-shield"></i> اجعلني Admin</button>
+            <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${isSuperAdminUser ? 'Super Admin' : (currentRole === 'admin' ? 'Admin' : 'User')}</div></div>
             <button class="btn btn-danger w-fit" onclick="resetData()"><i class="fa-solid fa-rotate-left"></i> إعادة ضبط بيانات CRM</button>
           </div>
         </div>
-        <div class="card p-4"><h2 class="font-black text-lg mb-3">PWA</h2><p class="text-sm text-slate-400">يمكن تثبيت التطبيق من زر تثبيت أو Add to Home Screen.</p></div>
-      </div>`;
+        <div class="card p-4"><h2 class="font-black text-lg mb-3">PWA</h2><p class="text-sm text-slate-400">يمكن تثبيت التطبيق من زر تثبيت أو Add to Home Screen.</p></div>`;
+      
+      if(isSuperAdminUser) {
+        html += `
+        <div class="card p-4">
+          <h2 class="font-black text-lg mb-3">إدارة الصلاحيات</h2>
+          <div id="usersPermissions" class="grid gap-3"></div>
+        </div>`;
+      }
+      
+      html += `</div>`;
+      
+      if(isSuperAdminUser) {
+        setTimeout(() => loadUsersPermissions(), 100);
+      }
+      
+      return html;
+    }
+
+    function loadUsersPermissions(){
+      if(!isSuperAdmin()) return;
+      
+      db.ref('users').once('value', snapshot => {
+        const users = snapshot.val() || {};
+        const container = document.getElementById('usersPermissions');
+        
+        if(!container) return;
+        
+        container.innerHTML = Object.entries(users).map(([uid, user]) => {
+          const perms = user.permissions || {};
+          const permKeys = ['dashboard', 'pipeline', 'deals', 'contacts', 'products', 'reps', 'returns', 'inventory', 'collections', 'followups', 'interactions', 'tickets', 'telesales', 'kpi', 'notifications', 'ai', 'settings', 'delete', 'admin'];
+          
+          return `
+            <div class="bg-[#111d35] p-3 rounded border border-slate-700">
+              <div class="font-bold mb-2 text-sm">${escapeHTML(user.email)}</div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                ${permKeys.map(key => `
+                  <label class="flex items-center gap-2 text-xs cursor-pointer">
+                    <input type="checkbox" ${perms[key] ? 'checked' : ''} onchange="updateUserPermission('${uid}', '${key}', this.checked)">
+                    <span>${key}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      });
+    }
+
+    function updateUserPermission(uid, permission, value){
+      if(!isSuperAdmin()) return;
+      
+      db.ref('users/' + uid + '/permissions/' + permission).set(value ? true : false)
+        .then(() => {
+          toast(`تم تحديث صلاحية ${permission}`);
+          loadUsersPermissions();
+        })
+        .catch(() => toast('خطأ في التحديث', 'error'));
     }
 
     function resetData(){
