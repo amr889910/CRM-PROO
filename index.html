@@ -469,6 +469,7 @@ window.login = function(){
 window.register = function(){
   const email = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
+  const name = email.split('@')[0]; // استخراج الاسم من البريد
 
   if(!email || !password){
     toast("اكتب البريد وكلمة المرور", "error");
@@ -477,6 +478,7 @@ window.register = function(){
 
   auth.createUserWithEmailAndPassword(email, password)
     .then(cred => db.ref("users/" + cred.user.uid).set({
+      name,
       email,
       role: email === SUPER_ADMIN_EMAIL ? "admin" : "user",
       permissions: email === SUPER_ADMIN_EMAIL ? {
@@ -1146,7 +1148,9 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         html += `
         <div class="card p-4">
           <h2 class="font-black text-lg mb-3">إدارة الصلاحيات</h2>
-          <div id="usersPermissions" class="grid gap-3"></div>
+          <div id="usersStats" class="mb-4 p-3 bg-[#111d35] rounded border border-[#2d9cdb] text-[#2d9cdb] font-bold">عدد المستخدمين: <span id="usersCount">0</span></div>
+          <div class="mb-4"><input class="input" id="usersSearchInput" type="text" placeholder="🔍 بحث بالإيميل أو الاسم..."></div>
+          <div id="usersPermissions" class="grid gap-4"></div>
         </div>`;
       }
       
@@ -1154,13 +1158,22 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       
       if(isSuperAdminUser) {
         setTimeout(() => loadUsersPermissions(), 100);
+        setTimeout(() => {
+          const searchInput = document.getElementById('usersSearchInput');
+          if(searchInput) {
+            searchInput.addEventListener('input', filterUsers);
+          }
+        }, 150);
       }
       
       return html;
     }
 
+    window.allUsers = {}; // متغير عام لتخزين المستخدمين
+
     function loadUsersPermissions(){
       const container = document.getElementById('usersPermissions');
+      const statsDiv = document.getElementById('usersStats');
       if(!container) {
         console.log("⚠️ usersPermissions container not found");
         return;
@@ -1180,27 +1193,52 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         .then(snapshot => {
           try {
             const users = snapshot.val() || {};
+            window.allUsers = users;
             console.log("✅ Users data loaded successfully:", Object.keys(users).length, "users");
             
             if(Object.keys(users).length === 0) {
               container.innerHTML = '<div class="text-slate-400 text-center py-4">لا توجد مستخدمين</div>';
+              if(statsDiv) statsDiv.innerHTML = 'عدد المستخدمين: <span id="usersCount">0</span>';
               return;
+            }
+            
+            if(statsDiv) {
+              document.getElementById('usersCount').textContent = Object.keys(users).length;
             }
             
             const permKeys = ['dashboard', 'pipeline', 'deals', 'contacts', 'products', 'reps', 'returns', 'inventory', 'collections', 'followups', 'interactions', 'tickets', 'telesales', 'kpi', 'notifications', 'ai', 'settings', 'delete', 'admin'];
             
             container.innerHTML = Object.entries(users).map(([uid, user]) => {
               const perms = user.permissions || {};
+              const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+              const userName = user.name || 'بدون اسم';
+              const badge = isSuperAdminUser ? '<span class="ml-2 px-2 py-1 bg-yellow-500/30 border border-yellow-500 rounded text-yellow-400 text-xs font-bold">👑 SUPER ADMIN</span>' : '';
+              const disabledClass = isSuperAdminUser ? 'opacity-50 pointer-events-none' : '';
+              const deleteButton = isSuperAdminUser ? '' : `<button class="btn btn-danger btn-sm w-fit" onclick="deleteUser('${uid}', '${escapeHTML(user.email)}')"><i class="fa-solid fa-trash"></i> حذف</button>`;
+              
               return `
-                <div class="bg-[#111d35] p-3 rounded border border-slate-700 mb-3">
-                  <div class="font-bold mb-2 text-sm text-[#2d9cdb]">${escapeHTML(user.email)}</div>
-                  <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                    ${permKeys.map(key => `
-                      <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-[#2d9cdb]">
-                        <input type="checkbox" ${perms[key] ? 'checked' : ''} onchange="updateUserPermission('${uid}', '${key}', this.checked)">
-                        <span>${key}</span>
-                      </label>
-                    `).join('')}
+                <div class="bg-[#111d35] p-4 rounded border ${isSuperAdminUser ? 'border-yellow-500/50' : 'border-slate-700'} user-card" data-uid="${uid}" data-email="${escapeHTML(user.email)}" data-name="${escapeHTML(userName)}">
+                  <div class="flex items-start justify-between mb-3">
+                    <div>
+                      <div class="font-bold text-lg text-white">👤 ${escapeHTML(userName)} ${badge}</div>
+                      <div class="text-sm text-slate-400">📧 ${escapeHTML(user.email)}</div>
+                      <div class="text-sm text-slate-400">🔐 Role: ${user.role === 'admin' ? '⭐ Admin' : 'User'}</div>
+                    </div>
+                  </div>
+                  <div class="bg-[#0c1527] p-3 rounded mb-3">
+                    <div class="text-xs text-slate-400 mb-2 font-bold">صلاحيات:</div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 ${disabledClass}">
+                      ${permKeys.map(key => `
+                        <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-[#2d9cdb]" ${isSuperAdminUser ? 'title="لا يمكن تعديل صلاحيات Super Admin"' : ''}>
+                          <input type="checkbox" class="perm-check" data-key="${key}" ${perms[key] ? 'checked' : ''} onchange="${isSuperAdminUser ? 'return false' : `updateUserPermissionUI('${uid}', '${key}', this.checked)`}" ${isSuperAdminUser ? 'disabled' : ''}>
+                          <span>${key}</span>
+                        </label>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <div class="flex gap-2 flex-wrap">
+                    ${isSuperAdminUser ? '' : `<button class="btn btn-primary btn-sm w-fit" onclick="saveUserPermissions('${uid}', '${escapeHTML(user.email)}')"><i class="fa-solid fa-save"></i> حفظ الصلاحيات</button>`}
+                    ${deleteButton}
                   </div>
                 </div>
               `;
@@ -1216,26 +1254,88 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         });
     }
 
-    function updateUserPermission(uid, permission, value){
+    function filterUsers(){
+      const searchTerm = document.getElementById('usersSearchInput')?.value.toLowerCase() || '';
+      const userCards = document.querySelectorAll('.user-card');
+      
+      userCards.forEach(card => {
+        const email = card.getAttribute('data-email')?.toLowerCase() || '';
+        const name = card.getAttribute('data-name')?.toLowerCase() || '';
+        const matches = email.includes(searchTerm) || name.includes(searchTerm);
+        card.style.display = matches ? 'block' : 'none';
+      });
+    }
+
+    function updateUserPermissionUI(uid, permission, value){
       if(!isSuperAdmin()) {
-        console.error("❌ updateUserPermission: Not a Super Admin");
-        toast('ليس لديك صلاحية لتعديل الصلاحيات', 'error');
+        console.error("❌ updateUserPermissionUI: Not a Super Admin");
+        return;
+      }
+      console.log("🔄 Permission UI updated:", { uid, permission, value });
+    }
+
+    function saveUserPermissions(uid, email){
+      if(!isSuperAdmin()) {
+        console.error("❌ saveUserPermissions: Not a Super Admin");
+        toast('ليس لديك صلاحية لحفظ الصلاحيات', 'error');
         return;
       }
       
-      console.log("🔄 Updating permission:", { uid, permission, value });
+      const card = document.querySelector(`[data-uid="${uid}"]`);
+      if(!card) {
+        console.error("❌ Card not found for uid:", uid);
+        return;
+      }
       
-      db.ref('users/' + uid + '/permissions/' + permission).set(value ? true : false)
+      const checkboxes = card.querySelectorAll('.perm-check');
+      const permissions = {};
+      
+      checkboxes.forEach(checkbox => {
+        permissions[checkbox.getAttribute('data-key')] = checkbox.checked;
+      });
+      
+      console.log("💾 Saving permissions for", email, ":", permissions);
+      
+      db.ref('users/' + uid + '/permissions').set(permissions)
         .then(() => {
-          console.log("✅ Permission updated successfully");
-          toast(`تم تحديث صلاحية ${permission}`);
-          setTimeout(() => loadUsersPermissions(), 300);
+          console.log("✅ Permissions saved successfully for", email);
+          toast(`✅ تم حفظ صلاحيات ${email}`);
         })
         .catch((error) => {
-          console.error("❌ Error updating permission:", error.code, error.message);
-          toast(`خطأ في التحديث: ${error.code}`, 'error');
+          console.error("❌ Error saving permissions:", error.code, error.message);
+          toast(`❌ خطأ في حفظ الصلاحيات: ${error.code}`, 'error');
         });
     }
+
+    function deleteUser(uid, email){
+      if(!isSuperAdmin()) {
+        console.error("❌ deleteUser: Not a Super Admin");
+        toast('ليس لديك صلاحية لحذف المستخدمين', 'error');
+        return;
+      }
+      
+      if(email === SUPER_ADMIN_EMAIL) {
+        toast('لا يمكن حذف حساب Super Admin', 'error');
+        return;
+      }
+      
+      if(!confirm(`هل تريد حذف المستخدم: ${email}؟`)) return;
+      
+      console.log("🗑️ Deleting user:", email);
+      
+      db.ref('users/' + uid).remove()
+        .then(() => {
+          console.log("✅ User deleted successfully:", email);
+          toast(`✅ تم حذف المستخدم ${email}`);
+          loadUsersPermissions();
+        })
+        .catch((error) => {
+          console.error("❌ Error deleting user:", error.code, error.message);
+          toast(`❌ خطأ في الحذف: ${error.code}`, 'error');
+        });
+    }
+
+
 
     function resetData(){
       if(currentRole !== 'admin') return toast('إعادة الضبط للمدير فقط', 'error');
