@@ -395,6 +395,7 @@
       data.reps ||= [];
       data.returns ||= [];
       data.collections ||= [];
+      data.inventory ||= [];
       data.inventoryMovements ||= [];
       data.followups ||= [];
       data.interactions ||= [];
@@ -403,6 +404,7 @@
       data.telesales ||= [];
       data.permissions ||= {};
       data.meta ||= { lastBackup:null };
+
       data.deals.forEach(d => {
         if(!d.stage){
           if(d.status === "done") d.stage = "won";
