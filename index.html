@@ -183,6 +183,7 @@
     const auth = firebase.auth();
 
     const SUPER_ADMIN_EMAIL = "amrahmedhlmey@gmail.com";
+    const STORE_KEY = 'crm_proo_clean_v2';
 
     function isSuperAdmin(){
       const result = currentFirebaseUser?.email === SUPER_ADMIN_EMAIL;
