@@ -184,6 +184,17 @@
 
     const SUPER_ADMIN_EMAIL = "amrahmedhlmey@gmail.com";
     const STORE_KEY = 'crm_proo_clean_v2';
+    let currentPage = 'dashboard';
+    let editing = null;
+    let currentFirebaseUser = null;
+    let currentRole = 'user';
+    let currentUserData = null;
+    let chartStatus = null;
+    let chartReps = null;
+    let deferredInstallPrompt = null;
+    let firebaseLoaded = false;
+    let isSaving = false;
+    let data = loadData();
 
     function isSuperAdmin(){
       const result = currentFirebaseUser?.email === SUPER_ADMIN_EMAIL;
@@ -247,16 +258,6 @@
         migrationDone = true;
       });
     }
-    let editing = null;
-    let currentFirebaseUser = null;
-    let currentRole = 'user';
-    let chartStatus = null;
-    let chartReps = null;
-    let deferredInstallPrompt = null;
-    let firebaseLoaded = false;
-    let isSaving = false;
-    let data = loadData();
-
     const pages = [
       { id:'dashboard', label:'لوحة التحكم', icon:'fa-chart-pie' },
       { id:'pipeline', label:'Pipeline', icon:'fa-diagram-project' },
@@ -473,8 +474,6 @@
         }
       });
     }
-
-    let currentUserData = null;
 
     function getCurrentPermissions(){
       if(isSuperAdmin()){
