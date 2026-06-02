@@ -190,9 +190,62 @@
       return result;
     }
 
-    const STORE_KEY = 'crm_proo_clean_v2';
+    // الأدوار الرسمية
+    const USER_ROLES = {
+      SUPER_ADMIN: 'super_admin',
+      ADMIN: 'admin',
+      TELESALES: 'telesales',
+      SALES_REP: 'sales_rep',
+      COLLECTOR: 'collector',
+      WAREHOUSE: 'warehouse'
+    };
 
-    let currentPage = 'dashboard';
+    // الصلاحيات الافتراضية لكل دور
+    const ROLE_PERMISSIONS = {
+      super_admin: { dashboard:true, pipeline:true, deals:true, contacts:true, products:true, reps:true, returns:true, inventory:true, collections:true, followups:true, interactions:true, tickets:true, telesales:true, kpi:true, notifications:true, ai:true, settings:true, delete:true, admin:true },
+      admin: { dashboard:true, pipeline:true, deals:true, contacts:true, products:true, reps:true, returns:true, inventory:true, collections:true, followups:true, interactions:true, tickets:true, telesales:true, kpi:true, notifications:true, ai:true, settings:true, delete:true, admin:true },
+      telesales: { dashboard:true, pipeline:false, deals:false, contacts:true, products:false, reps:false, returns:false, inventory:false, collections:false, followups:true, interactions:true, tickets:false, telesales:true, kpi:false, notifications:false, ai:false, settings:false, delete:false, admin:false },
+      sales_rep: { dashboard:true, pipeline:false, deals:true, contacts:true, products:false, reps:false, returns:false, inventory:false, collections:false, followups:true, interactions:false, tickets:false, telesales:false, kpi:false, notifications:false, ai:false, settings:false, delete:false, admin:false },
+      collector: { dashboard:true, pipeline:false, deals:false, contacts:false, products:false, reps:false, returns:true, inventory:false, collections:true, followups:false, interactions:false, tickets:false, telesales:false, kpi:false, notifications:false, ai:false, settings:false, delete:false, admin:false },
+      warehouse: { dashboard:true, pipeline:false, deals:false, contacts:false, products:true, reps:false, returns:false, inventory:true, collections:false, followups:false, interactions:false, tickets:false, telesales:false, kpi:false, notifications:false, ai:false, settings:false, delete:false, admin:false }
+    };
+
+    const ROLE_LABELS = {
+      super_admin: 'Super Admin',
+      admin: 'مدير (Admin)',
+      telesales: 'تيلي سيلز (TeleSales)',
+      sales_rep: 'مندوب مبيعات (Sales Rep)',
+      collector: 'محصل (Collector)',
+      warehouse: 'أمين مخزن (Warehouse)'
+    };
+
+    function getDefaultPermissions(role) {
+      return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.telesales;
+    }
+
+    let migrationDone = false;
+    function migrateOldUsers(){
+      if(migrationDone || !isSuperAdmin()) return;
+      const map = [
+        { email: 'shroukamin2030@gmail.com', name: 'شروق', role: 'telesales' },
+        { email: 'mayadamegahed593@gmail.com', name: 'مياده مجاهد', role: 'telesales' }
+      ];
+      db.ref('users').once('value', snapshot => {
+        const users = snapshot.val() || {};
+        let updates = {};
+        map.forEach(target => {
+          const entry = Object.entries(users).find(([uid, u]) => u.email === target.email);
+          if(entry) {
+            const [uid, user] = entry;
+            if(user.name !== target.name || user.role !== target.role) {
+              updates[uid] = { ...user, name: target.name, role: target.role, permissions: getDefaultPermissions(target.role), createdAt: user.createdAt || Date.now() };
+            }
+          }
+        });
+        if(Object.keys(updates).length > 0) db.ref('users').update(updates).then(() => { toast(`✅ تم تحديث ${Object.keys(updates).length} مستخدم`); loadUsersPermissions(); });
+        migrationDone = true;
+      });
+    }
     let editing = null;
     let currentFirebaseUser = null;
     let currentRole = 'user';
@@ -392,6 +445,8 @@
     }
 
     function normalizeData(){
+      if(!data) data = defaults();
+      data.contacts ||= [];
       data.contacts ||= [];
       data.deals ||= [];
       data.products ||= [];
@@ -405,7 +460,7 @@
       data.tickets ||= [];
       data.notifications ||= [];
       data.telesales ||= [];
-      data.permissions ||= {};
+      data.meta ||= { lastBackup:null };
       data.meta ||= { lastBackup:null };
 
       data.deals.forEach(d => {
@@ -469,52 +524,18 @@ window.login = function(){
 window.register = function(){
   const email = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-  const name = email.split('@')[0]; // استخراج الاسم من البريد
-
-  if(!email || !password){
-    toast("اكتب البريد وكلمة المرور", "error");
-    return;
-  }
-
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(cred => db.ref("users/" + cred.user.uid).set({
-      name,
+  if(!email || !password) return toast("اكتب البريد وكلمة المرور", "error");
+  auth.createUserWithEmailAndPassword(email, password).then(cred => {
+    const isSuper = email === SUPER_ADMIN_EMAIL;
+    const role = isSuper ? 'super_admin' : 'telesales';
+    return db.ref("users/" + cred.user.uid).set({
+      name: email.split('@')[0],
       email,
-      role: email === SUPER_ADMIN_EMAIL ? "admin" : "user",
-      permissions: email === SUPER_ADMIN_EMAIL ? {
-        dashboard:true,
-        pipeline:true,
-        deals:true,
-        contacts:true,
-        products:true,
-        reps:true,
-        returns:true,
-        inventory:true,
-        collections:true,
-        followups:true,
-        interactions:true,
-        tickets:true,
-        telesales:true,
-        kpi:true,
-        notifications:true,
-        ai:true,
-        settings:true,
-        delete:true,
-        admin:true
-      } : {
-        dashboard:true,
-        contacts:true,
-        deals:true,
-        followups:true,
-        interactions:true,
-        notifications:true,
-        delete:false,
-        admin:false
-      },
+      role,
+      permissions: getDefaultPermissions(role),
       createdAt: Date.now()
-    }))
-    .then(() => toast("تم إنشاء الحساب بنجاح"))
-    .catch(error => toast(error.message, "error"));
+    });
+  }).then(() => toast("تم إنشاء الحساب بنجاح")).catch(error => toast(arFirebaseError(error), "error"));
 };
 
     function logoutUser(){
@@ -536,29 +557,25 @@ window.register = function(){
       toast("تم تحديث الصلاحية");
     }
 
-    auth.onAuthStateChanged((user) => {
-      if(user){
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
         currentFirebaseUser = user;
-        console.log("✅ User logged in:", user.email);
-
         document.getElementById("loginScreen").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
-
-        db.ref("users/" + user.uid).once("value").then(userSnap => {
-          currentUserData = userSnap.val() || {};
-          currentRole = currentUserData.role || "user";
-          console.log("📋 Current User Data Loaded:", { email: currentUserData.email, role: currentRole, isSuperAdmin: isSuperAdmin() });
-          startRealtimeSync();
-        }).catch(error => {
-          console.error("❌ Error loading user data:", error);
-          currentUserData = {};
-          startRealtimeSync();
-        });
+        const snap = await db.ref("users/" + user.uid).once("value");
+        let userData = snap.val() || {};
+        if (user.email === SUPER_ADMIN_EMAIL && userData.role !== 'super_admin') {
+          userData = { name: "Super Admin", email: user.email, role: 'super_admin', permissions: ROLE_PERMISSIONS.super_admin, createdAt: userData.createdAt || Date.now() };
+          await db.ref("users/" + user.uid).set(userData);
+        }
+        currentUserData = userData;
+        currentRole = userData.role || "user";
+        if(isSuperAdmin()) migrateOldUsers();
+        startRealtimeSync();
       } else {
         document.getElementById("loginScreen").classList.remove("hidden");
         document.getElementById("app").classList.add("hidden");
-        currentUserData = null;
-        currentFirebaseUser = null;
+        currentUserData = null; currentFirebaseUser = null;
       }
     });
 
@@ -1173,85 +1190,45 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
 
     function loadUsersPermissions(){
       const container = document.getElementById('usersPermissions');
-      const statsDiv = document.getElementById('usersStats');
-      if(!container) {
-        console.log("⚠️ usersPermissions container not found");
-        return;
-      }
-      
-      console.log("🔐 loadUsersPermissions() called. isSuperAdmin:", isSuperAdmin());
-      if(!isSuperAdmin()) {
-        console.log("❌ Not a Super Admin - cannot load users");
-        container.innerHTML = '<div class="text-red-500 text-center py-4">لا يوجد صلاحية للوصول لإدارة المستخدمين</div>';
-        return;
-      }
-      
+      if(!container || !isSuperAdmin()) return;
       container.innerHTML = '<div class="text-slate-400 text-center py-4">جاري التحميل...</div>';
-      
-      db.ref('users')
-        .once('value')
-        .then(snapshot => {
-          try {
-            const users = snapshot.val() || {};
-            window.allUsers = users;
-            console.log("✅ Users data loaded successfully:", Object.keys(users).length, "users");
-            
-            if(Object.keys(users).length === 0) {
-              container.innerHTML = '<div class="text-slate-400 text-center py-4">لا توجد مستخدمين</div>';
-              if(statsDiv) statsDiv.innerHTML = 'عدد المستخدمين: <span id="usersCount">0</span>';
-              return;
-            }
-            
-            if(statsDiv) {
-              document.getElementById('usersCount').textContent = Object.keys(users).length;
-            }
-            
-            const permKeys = ['dashboard', 'pipeline', 'deals', 'contacts', 'products', 'reps', 'returns', 'inventory', 'collections', 'followups', 'interactions', 'tickets', 'telesales', 'kpi', 'notifications', 'ai', 'settings', 'delete', 'admin'];
-            
-            container.innerHTML = Object.entries(users).map(([uid, user]) => {
-              const perms = user.permissions || {};
-              const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-              const userName = user.name || 'بدون اسم';
-              const badge = isSuperAdminUser ? '<span class="ml-2 px-2 py-1 bg-yellow-500/30 border border-yellow-500 rounded text-yellow-400 text-xs font-bold">👑 SUPER ADMIN</span>' : '';
-              const disabledClass = isSuperAdminUser ? 'opacity-50 pointer-events-none' : '';
-              const deleteButton = isSuperAdminUser ? '' : `<button class="btn btn-danger btn-sm w-fit" onclick="deleteUser('${uid}', '${escapeHTML(user.email)}')"><i class="fa-solid fa-trash"></i> حذف</button>`;
-              
-              return `
-                <div class="bg-[#111d35] p-4 rounded border ${isSuperAdminUser ? 'border-yellow-500/50' : 'border-slate-700'} user-card" data-uid="${uid}" data-email="${escapeHTML(user.email)}" data-name="${escapeHTML(userName)}">
-                  <div class="flex items-start justify-between mb-3">
-                    <div>
-                      <div class="font-bold text-lg text-white">👤 ${escapeHTML(userName)} ${badge}</div>
-                      <div class="text-sm text-slate-400">📧 ${escapeHTML(user.email)}</div>
-                      <div class="text-sm text-slate-400">🔐 Role: ${user.role === 'admin' ? '⭐ Admin' : 'User'}</div>
-                    </div>
-                  </div>
-                  <div class="bg-[#0c1527] p-3 rounded mb-3">
-                    <div class="text-xs text-slate-400 mb-2 font-bold">صلاحيات:</div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 ${disabledClass}">
-                      ${permKeys.map(key => `
-                        <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-[#2d9cdb]" ${isSuperAdminUser ? 'title="لا يمكن تعديل صلاحيات Super Admin"' : ''}>
-                          <input type="checkbox" class="perm-check" data-key="${key}" ${perms[key] ? 'checked' : ''} onchange="${isSuperAdminUser ? 'return false' : `updateUserPermissionUI('${uid}', '${key}', this.checked)`}" ${isSuperAdminUser ? 'disabled' : ''}>
-                          <span>${key}</span>
-                        </label>
-                      `).join('')}
-                    </div>
-                  </div>
-                  <div class="flex gap-2 flex-wrap">
-                    ${isSuperAdminUser ? '' : `<button class="btn btn-primary btn-sm w-fit" onclick="saveUserPermissions('${uid}', '${escapeHTML(user.email)}')"><i class="fa-solid fa-save"></i> حفظ الصلاحيات</button>`}
-                    ${deleteButton}
-                  </div>
-                </div>
-              `;
-            }).join('');
-          } catch(e) {
-            console.error("❌ Error processing users data:", e);
-            container.innerHTML = '<div class="text-red-500 text-center py-4">خطأ في تحميل بيانات المستخدمين</div>';
+      db.ref('users').once('value').then(snapshot => {
+        const users = snapshot.val() || {};
+        window.allUsers = users;
+        const permKeys = Object.keys(ROLE_PERMISSIONS.super_admin);
+        container.innerHTML = Object.entries(users).map(([uid, user]) => {
+          const email = user.email || '';
+          let name = user.name;
+          if (!name) {
+            if (email === 'shroukamin2030@gmail.com') name = 'شروق';
+            else if (email === 'mayadamegahed593@gmail.com') name = 'مياده مجاهد';
+            else name = email.split('@')[0] || 'بدون اسم';
           }
-        })
-        .catch(error => {
-          console.error("❌ Firebase error reading users:", error.code, error.message);
-          container.innerHTML = `<div class="bg-red-900/20 border border-red-700/50 rounded p-3 text-red-400 text-sm text-right">❌ <strong>لا يوجد صلاحية للوصول للمستخدمين</strong><br><small>خطأ: ${error.code || 'unknown'}</small><br><small>يرجى تحديث Firebase Security Rules</small></div>`;
-        });
+          const isSuper = email === SUPER_ADMIN_EMAIL;
+          const badge = isSuper ? '<span class="mr-1 px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/50 rounded text-yellow-500 text-[10px] font-bold">SUPER ADMIN</span>' : '';
+          return `
+            <div class="bg-[#111d35] p-4 rounded border ${isSuper ? 'border-yellow-500' : 'border-slate-700'} user-card" data-uid="${uid}" data-email="${escapeHTML(email)}" data-name="${escapeHTML(name)}">
+              <div class="mb-3">
+                <div class="font-bold text-white flex items-center gap-1">👤 ${escapeHTML(name)} ${badge}</div>
+                <div class="text-sm text-slate-400">📧 ${escapeHTML(email)}</div>
+                <select class="input mt-2 role-select" onchange="applyRoleDefaultsUI('${uid}', this.value)" ${isSuper ? 'disabled' : ''}>
+                  ${Object.entries(ROLE_LABELS).map(([r, l]) => `<option value="${r}" ${user.role === r ? 'selected' : ''}>${l}</option>`).join('')}
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                ${permKeys.map(k => `
+                  <label class="flex items-center gap-2 text-xs cursor-pointer hover:text-[#2d9cdb]">
+                    <input type="checkbox" class="perm-check" data-key="${k}" ${user.permissions?.[k] ? 'checked' : ''} ${isSuper ? 'disabled' : ''}> <span>${k}</span>
+                  </label>
+                `).join('')}
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-primary btn-sm flex-1" onclick="saveUserPermissions('${uid}', '${escapeHTML(email)}')">حفظ</button>
+                ${!isSuper ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${uid}', '${escapeHTML(email)}')">حذف</button>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+      });
     }
 
     function filterUsers(){
@@ -1266,45 +1243,22 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       });
     }
 
-    function updateUserPermissionUI(uid, permission, value){
-      if(!isSuperAdmin()) {
-        console.error("❌ updateUserPermissionUI: Not a Super Admin");
-        return;
-      }
-      console.log("🔄 Permission UI updated:", { uid, permission, value });
+    function applyRoleDefaultsUI(uid, role) {
+      const card = document.querySelector(`[data-uid="${uid}"]`);
+      if(!card) return;
+      const defaults = getDefaultPermissions(role);
+      card.querySelectorAll('.perm-check').forEach(cb => cb.checked = !!defaults[cb.getAttribute('data-key')]);
     }
 
     function saveUserPermissions(uid, email){
-      if(!isSuperAdmin()) {
-        console.error("❌ saveUserPermissions: Not a Super Admin");
-        toast('ليس لديك صلاحية لحفظ الصلاحيات', 'error');
-        return;
-      }
-      
+      if(!isSuperAdmin()) return;
       const card = document.querySelector(`[data-uid="${uid}"]`);
-      if(!card) {
-        console.error("❌ Card not found for uid:", uid);
-        return;
-      }
-      
-      const checkboxes = card.querySelectorAll('.perm-check');
-      const permissions = {};
-      
-      checkboxes.forEach(checkbox => {
-        permissions[checkbox.getAttribute('data-key')] = checkbox.checked;
-      });
-      
-      console.log("💾 Saving permissions for", email, ":", permissions);
-      
-      db.ref('users/' + uid + '/permissions').set(permissions)
-        .then(() => {
-          console.log("✅ Permissions saved successfully for", email);
-          toast(`✅ تم حفظ صلاحيات ${email}`);
-        })
-        .catch((error) => {
-          console.error("❌ Error saving permissions:", error.code, error.message);
-          toast(`❌ خطأ في حفظ الصلاحيات: ${error.code}`, 'error');
-        });
+      if(!card) return;
+      const role = card.querySelector('.role-select').value;
+      const perms = {};
+      card.querySelectorAll('.perm-check').forEach(cb => perms[cb.getAttribute('data-key')] = cb.checked);
+      const u = window.allUsers[uid] || {};
+      db.ref('users/' + uid).update({ ...u, role, permissions: perms, name: u.name || email.split('@')[0] }).then(() => toast(`✅ تم الحفظ لـ ${email}`));
     }
 
     function deleteUser(uid, email){
