@@ -958,7 +958,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
             ])}
             ${field('zone','المنطقة',r.zone)}
             ${field('group','المجموعة',r.group)}
-            ${selectField('salesRep','مندوب المبيعات',r.salesRep || '', data.reps.filter(rep => rep.role === 'sales').map(rep => [rep.name, rep.name]))}
+            ${selectField('salesRep','مندوب المبيعات',r.salesRep || '', data.reps.filter(rep => rep.role === 'sales_rep' || rep.role === 'sales').map(rep => [rep.name, rep.name]))}
             ${selectField('collector','مندوب التحصيل',r.collector || '', data.reps.filter(rep => rep.role === 'collector').map(rep => [rep.name, rep.name]))}
             ${selectField('telesales','موظف التيلي سيلز',r.telesales || '', data.reps.filter(rep => rep.role === 'telesales').map(rep => [rep.name, rep.name]))}
             ${selectField('accountManager','مسؤول العميل',r.accountManager || '', data.reps.map(rep => [rep.name, rep.name]))}
@@ -1044,6 +1044,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
           <div class="grid md:grid-cols-2 gap-3">
             ${field('name','اسم المندوب',r.name)}
             ${field('phone','الهاتف',r.phone)}
+            ${selectField('role','الدور',r.role || 'sales_rep', [['sales_rep','مندوب مبيعات'],['collector','مندوب تحصيل'],['telesales','تيلي سيلز'],['warehouse','مخزن'],['admin','مدير']])}
             ${field('target','الهدف',r.target,'number')}
             ${field('sales','المبيعات',r.sales,'number')}
             ${field('collected','المحصل',r.collected,'number')}
