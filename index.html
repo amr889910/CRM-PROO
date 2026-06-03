@@ -1194,6 +1194,9 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       container.innerHTML = '<div class="text-slate-400 text-center py-4">جاري التحميل...</div>';
       db.ref('users').once('value').then(snapshot => {
         const users = snapshot.val() || {};
+        const usersCount = Object.keys(users).length;
+        const countEl = document.getElementById("usersCount");
+        if (countEl) countEl.textContent = usersCount;
         window.allUsers = users;
         const permKeys = Object.keys(ROLE_PERMISSIONS.super_admin);
         container.innerHTML = Object.entries(users).map(([uid, user]) => {
@@ -1234,13 +1237,17 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     function filterUsers(){
       const searchTerm = document.getElementById('usersSearchInput')?.value.toLowerCase() || '';
       const userCards = document.querySelectorAll('.user-card');
+      let visibleCount = 0;
       
       userCards.forEach(card => {
         const email = card.getAttribute('data-email')?.toLowerCase() || '';
         const name = card.getAttribute('data-name')?.toLowerCase() || '';
         const matches = email.includes(searchTerm) || name.includes(searchTerm);
         card.style.display = matches ? 'block' : 'none';
+        if (matches) visibleCount++;
       });
+      const countEl = document.getElementById("usersCount");
+      if (countEl) countEl.textContent = visibleCount;
     }
 
     function applyRoleDefaultsUI(uid, role) {
