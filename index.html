@@ -757,9 +757,9 @@ window.register = function(){
           heads:['العنوان','العميل','المبلغ','الحالة','الأولوية','التاريخ','المندوب']
         },
         contacts: {
-          keys:['photo','name','phone','company','salesRep','collector','telesales','accountManager','status'],
-          search:['name','phone','company','salesRep','collector','telesales','accountManager','status'],
-          heads:['صورة','الاسم','الهاتف','الشركة','مندوب المبيعات','المحصل','تيلي سيلز','مسؤول العميل','الحالة']
+          keys:['photo','name','phone','company','customerType','salesRep','collector','telesales','accountManager','status'],
+          search:['name','phone','company','customerType','salesRep','collector','telesales','accountManager','status','zone'],
+          heads:['صورة','الاسم','الهاتف','الشركة','نوع العميل','مندوب المبيعات','المحصل','تيلي سيلز','مسؤول العميل','الحالة']
         },
         products: {
           keys:['photo','name','sku','category','price','stock'],
@@ -835,6 +835,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     function cell(type, key, value){
       if(key === 'photo') return value ? `<img class="mini-img" src="${value}">` : `<div class="mini-img"><i class="fa-solid fa-image text-slate-500"></i></div>`;
       if(key === 'amount' || key === 'price' || key === 'target' || key === 'sales' || key === 'collected') return money(value);
+      if(key === 'customerType') return {pharmacy:'صيدلية',company:'شركة',store:'محل',clinic:'عيادة',doctor:'دكتور',other:'أخرى'}[value]||value;
       if(type === 'contacts' && key === 'status') return customerStatusLabel(value);
       if(key === 'status') return `<span class="badge ${statusClass(value)}">${statusLabel(value)}</span>`;
       if(type === 'followups' && key === 'method') return methodLabel(value);
@@ -926,11 +927,18 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
     }
 
     function formFields(type, r){
+      const typeMap = {pharmacy:'صيدلية',company:'شركة',store:'محل',clinic:'عيادة',doctor:'دكتور',other:'أخرى'};
+      const clientOptions = [['', '-- اختر عميل --'], ...data.contacts.map(c => {
+        const displayName = c.company ? `${c.company} (${c.name})` : c.name;
+        const label = `${displayName} - ${c.phone || ''} - ${typeMap[c.customerType] || 'صيدلية'}`;
+        return [c.name, label];
+      })];
+
       if(type === 'deals') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
             ${field('title','عنوان الطلبية',r.title)}
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${field('amount','المبلغ',r.amount,'number')}
             ${field('date','التاريخ',r.date,'date')}
             ${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}
@@ -945,6 +953,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
           <div class="grid md:grid-cols-2 gap-3">
             ${field('name','اسم العميل',r.name)}
             ${field('phone','الهاتف',r.phone)}
+            ${selectField('customerType','نوع العميل / المنشأة',r.customerType||'pharmacy', [['pharmacy','صيدلية'],['company','شركة'],['store','محل'],['clinic','عيادة'],['doctor','دكتور'],['other','أخرى']])}
             ${field('email','الإيميل',r.email,'email')}
             ${field('company','الشركة',r.company)}
             ${selectField('status','حالة العميل',r.status || 'lead', [
@@ -967,7 +976,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'followups') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${selectField('method','طريقة المتابعة',r.method || 'call', [
               ['call','مكالمة'],
               ['whatsapp','واتساب'],
@@ -989,7 +998,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'interactions') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${selectField('channel','القناة',r.channel || 'whatsapp', [
               ['whatsapp','واتساب'],
               ['phone','هاتف'],
@@ -1008,7 +1017,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'tickets') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${field('subject','موضوع التذكرة',r.subject)}
             ${selectField('priority','الأولوية',r.priority || 'medium', [
               ['high','عالية'],
@@ -1053,7 +1062,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'returns') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${field('rep','المندوب',r.rep)}
             ${field('amount','قيمة المرتجع',r.amount,'number')}
             ${field('reason','سبب المرتجع',r.reason)}
@@ -1083,7 +1092,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'collections') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${field('client','العميل',r.client)}
+            ${selectField('client','العميل',r.client, clientOptions)}
             ${field('amount','المبلغ',r.amount,'number')}
             ${selectField('method','طريقة الدفع',r.method || 'cash', [
               ['cash','نقد'],
