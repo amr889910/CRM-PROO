@@ -1157,7 +1157,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
           <div class="grid gap-3">
             <div><div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div><div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div></div>
             <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${isSuperAdminUser ? 'Super Admin' : (currentRole === 'admin' ? 'Admin' : 'User')}</div></div>
-            <button class="btn btn-danger w-fit" onclick="resetData()"><i class="fa-solid fa-rotate-left"></i> إعادة ضبط بيانات CRM</button>
+            ${isSuperAdminUser ? `<button class="btn btn-danger w-fit border-2 border-red-600 font-black shadow-[0_0_15px_rgba(220,38,38,0.2)]" onclick="resetData()"><i class="fa-solid fa-triangle-exclamation"></i> إعادة ضبط خطيرة - للأدمن فقط</button>` : ''}
           </div>
         </div>
         <div class="card p-4"><h2 class="font-black text-lg mb-3">PWA</h2><p class="text-sm text-slate-400">يمكن تثبيت التطبيق من زر تثبيت أو Add to Home Screen.</p></div>`;
@@ -1300,13 +1300,21 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
 
 
     function resetData(){
-      if(currentRole !== 'admin') return toast('إعادة الضبط للمدير فقط', 'error');
-      if(!confirm('سيتم حذف كل البيانات الحالية واسترجاع البيانات التجريبية. هل أنت متأكد؟')) return;
+      if(!isSuperAdmin()) return toast('إعادة الضبط مسموحة للـ Super Admin فقط', 'error');
+      
+      const confirmText = prompt("تحذير خطير: هذا سيحذف/يعيد ضبط بيانات CRM. اكتب RESET لتأكيد العملية");
+      if(confirmText !== 'RESET') return toast("تم إلغاء العملية");
 
-      data = defaults();
-      saveData();
-      render();
-      toast('تمت إعادة الضبط');
+      toast("جاري حفظ نسخة احتياطية إجبارية...");
+      const backupId = Date.now();
+      db.ref('backups/' + currentFirebaseUser.uid + '/' + backupId).set(data).then(() => {
+        data = defaults();
+        saveData();
+        render();
+        toast('تمت إعادة الضبط بنجاح');
+      }).catch(err => {
+        toast("تم إلغاء إعادة الضبط لأن النسخ الاحتياطي فشل", "error");
+      });
     }
 
     function exportJSON(){
