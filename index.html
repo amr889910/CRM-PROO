@@ -928,17 +928,18 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
 
     function formFields(type, r){
       const typeMap = {pharmacy:'صيدلية',company:'شركة',store:'محل',clinic:'عيادة',doctor:'دكتور',other:'أخرى'};
-      const clientOptions = [['', '-- اختر عميل --'], ...data.contacts.map(c => {
-        const displayName = c.company ? `${c.company} (${c.name})` : c.name;
-        const label = `${displayName} - ${c.phone || ''} - ${typeMap[c.customerType] || 'صيدلية'}`;
-        return [c.name, label];
-      })];
+    const clientOptions = data.contacts.map(c => {
+      const disp = c.company ? `${c.name} (${c.company})` : c.name;
+      const label = `${disp} - ${c.phone || ''} - ${typeMap[c.customerType] || 'صيدلية'} - ${c.zone || ''}`;
+      return [c.name, label];
+    });
+    const clientPlaceholder = "ابحث بالاسم أو الهاتف أو الصيدلية أو المنطقة";
 
       if(type === 'deals') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
             ${field('title','عنوان الطلبية',r.title)}
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${field('amount','المبلغ',r.amount,'number')}
             ${field('date','التاريخ',r.date,'date')}
             ${selectField('status','الحالة',r.status || 'new', [['new','جديد'],['progress','قيد التنفيذ'],['done','مكتمل'],['lost','مفقود']])}
@@ -976,7 +977,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'followups') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${selectField('method','طريقة المتابعة',r.method || 'call', [
               ['call','مكالمة'],
               ['whatsapp','واتساب'],
@@ -998,7 +999,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'interactions') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${selectField('channel','القناة',r.channel || 'whatsapp', [
               ['whatsapp','واتساب'],
               ['phone','هاتف'],
@@ -1017,7 +1018,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'tickets') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${field('subject','موضوع التذكرة',r.subject)}
             ${selectField('priority','الأولوية',r.priority || 'medium', [
               ['high','عالية'],
@@ -1062,7 +1063,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'returns') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${field('rep','المندوب',r.rep)}
             ${field('amount','قيمة المرتجع',r.amount,'number')}
             ${field('reason','سبب المرتجع',r.reason)}
@@ -1092,7 +1093,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(type === 'collections') {
         return `
           <div class="grid md:grid-cols-2 gap-3">
-            ${selectField('client','العميل',r.client, clientOptions)}
+          ${datalistField('client','العميل',r.client, clientOptions, clientPlaceholder)}
             ${field('amount','المبلغ',r.amount,'number')}
             ${selectField('method','طريقة الدفع',r.method || 'cash', [
               ['cash','نقد'],
