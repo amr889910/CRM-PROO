@@ -401,6 +401,13 @@
         return;
       }
 
+      // Safety guard: never overwrite Firebase with fewer contacts without confirmation
+      const newCount = (data.contacts || []).length;
+      if(newCount === 0 && !silent){
+        console.warn("⚠️ saveData blocked: contacts array is empty");
+        return;
+      }
+
       isSaving = true;
 
       teamDataRef().set(data)
@@ -414,12 +421,30 @@
         });
     }
 
+    let realtimeListener = null;
+
     function startRealtimeSync(){
-      teamDataRef().on("value", snapshot => {
+      // Remove existing listener first
+      if(realtimeListener){
+        teamDataRef().off('value', realtimeListener);
+        realtimeListener = null;
+      }
+
+      realtimeListener = teamDataRef().on("value", snapshot => {
         if(isSaving) return;
 
         if(snapshot.exists()){
-          data = snapshot.val();
+          const remote = snapshot.val();
+
+          // Safety: never accept data that drops contacts by more than 5
+          const localCount = (data.contacts || []).length;
+          const remoteCount = (remote.contacts || []).length;
+          if(localCount > 10 && remoteCount < localCount - 5 && firebaseLoaded){
+            console.warn(`⚠️ Remote has ${remoteCount} contacts vs local ${localCount} — ignoring suspicious update`);
+            return;
+          }
+
+          data = remote;
           normalizeData();
           firebaseLoaded = true;
 
@@ -428,9 +453,12 @@
           buildNav();
           render();
         } else {
+          // Firebase is empty — only push local data if it has meaningful content
           firebaseLoaded = true;
           normalizeData();
-          saveData(true);
+          if((data.contacts || []).length > 0 || (data.deals || []).length > 0){
+            saveData(true);
+          }
         }
       });
     }
@@ -447,7 +475,6 @@
     function normalizeData(){
       if(!data) data = defaults();
       data.contacts ||= [];
-      data.contacts ||= [];
       data.deals ||= [];
       data.products ||= [];
       data.reps ||= [];
@@ -460,8 +487,17 @@
       data.tickets ||= [];
       data.notifications ||= [];
       data.telesales ||= [];
+      data.activityLogs ||= [];
+      data._deleted ||= {};
       data.meta ||= { lastBackup:null };
-      data.meta ||= { lastBackup:null };
+
+      // Normalize old contacts: ensure required fields
+      data.contacts.forEach(c => {
+        c.customerType ||= 'pharmacy';
+        c.status ||= 'lead';
+        c.timeline ||= [];
+        c.zone ||= '';
+      });
 
       data.deals.forEach(d => {
         if(!d.stage){
@@ -906,6 +942,18 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         </label>`;
     }
 
+    function datalistField(name, label, value='', options=[], placeholder=''){
+      const listId = 'dl_' + name + '_' + Math.random().toString(36).slice(2,7);
+      return `
+        <label class="grid gap-1">
+          <span class="text-sm text-slate-400 font-bold">${label}</span>
+          <input name="${name}" list="${listId}" class="input" value="${escapeAttr(value)}" placeholder="${escapeAttr(placeholder)}">
+          <datalist id="${listId}">
+            ${options.map(o => `<option value="${escapeAttr(o[0])}">${escapeAttr(o[1])}</option>`).join('')}
+          </datalist>
+        </label>`;
+    }
+
     function textarea(name, label, value=''){
       return `
         <label class="grid gap-1 md:col-span-2">
@@ -1124,8 +1172,10 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(editing.id){
         const idx = data[editing.type].findIndex(x => x.id === editing.id);
         data[editing.type][idx] = { ...data[editing.type][idx], ...row };
+        addActivityLog('edit', `Edited ${editing.type}: ${row.name || row.title || row.client || editing.id}`);
       } else {
         data[editing.type].push({ id: uid(), ...row });
+        addActivityLog('add', `Added ${editing.type}: ${row.name || row.title || row.client || ''}`);
       }
 
       addNotification(`تم حفظ ${typeLabel(editing.type)} بنجاح`);
@@ -1135,20 +1185,67 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       toast('تم الحفظ بنجاح');
     }
 
+    function addActivityLog(action, detail=''){
+      data.activityLogs ||= [];
+      data.activityLogs.unshift({
+        id: uid(),
+        action,
+        detail,
+        user: currentFirebaseUser?.email || 'unknown',
+        time: Date.now()
+      });
+      // Keep only last 200 logs
+      if(data.activityLogs.length > 200) data.activityLogs = data.activityLogs.slice(0, 200);
+    }
+
+    function createSafetyBackup(reason='auto'){
+      return new Promise((resolve, reject) => {
+        if(!currentFirebaseUser){ reject('no user'); return; }
+        const ts = Date.now();
+        const backupData = {
+          ...data,
+          createdAt: ts,
+          createdBy: currentFirebaseUser.email,
+          reason,
+          contactsCount: (data.contacts || []).length
+        };
+        db.ref('backups/' + currentFirebaseUser.uid + '/' + ts).set(backupData)
+          .then(() => resolve(ts))
+          .catch(reject);
+      });
+    }
+
+
     function removeRow(type, id){
       if(!isSuperAdmin() && !can("delete")){
         toast("الحذف للأدمن فقط", "error");
         return;
       }
 
-      if(!confirm('تأكيد الحذف؟')) return;
+      const item = (data[type] || []).find(x => x.id === id);
+      if(!item){ toast('العنصر غير موجود', 'error'); return; }
+
+      const label = typeLabel(type);
+      const itemName = item.name || item.title || item.client || item.subject || id;
+
+      const confirm1 = confirm(`تأكيد حذف ${label}: "${itemName}"؟\n\nالحذف سيُنقل العنصر إلى سلة المحذوفات أولاً.`);
+      if(!confirm1) return;
+
+      const typed = prompt(`اكتب DELETE لتأكيد الحذف:`);
+      if(typed !== 'DELETE'){ toast('تم إلغاء الحذف'); return; }
+
+      // Soft delete: move to deleted bin
+      data._deleted ||= {};
+      data._deleted[type] ||= [];
+      data._deleted[type].push({ ...item, _deletedAt: Date.now(), _deletedBy: currentFirebaseUser?.email });
 
       data[type] = data[type].filter(x => x.id !== id);
 
-      addNotification(`تم حذف ${typeLabel(type)}`);
+      addActivityLog('delete', `Deleted ${type}: ${itemName}`);
+      addNotification(`تم حذف ${label}: ${itemName}`);
       saveData();
       render();
-      toast('تم الحذف');
+      toast('تم الحذف (محفوظ في سلة المحذوفات)');
     }
 
     function closeModal(){
@@ -1164,7 +1261,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
           <h2 class="font-black text-lg mb-3">إعدادات الحساب</h2>
           <div class="grid gap-3">
             <div><div class="text-sm text-slate-400 font-bold mb-1">المستخدم الحالي</div><div class="input">${escapeHTML(currentFirebaseUser?.email || '')}</div></div>
-            <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${isSuperAdminUser ? 'Super Admin' : (currentRole === 'admin' ? 'Admin' : 'User')}</div></div>
+            <div><div class="text-sm text-slate-400 font-bold mb-1">الدور الحالي</div><div class="input">${ROLE_LABELS[currentRole] || currentRole}</div></div>
             ${isSuperAdminUser ? `<button class="btn btn-danger w-fit border-2 border-red-600 font-black shadow-[0_0_15px_rgba(220,38,38,0.2)]" onclick="resetData()"><i class="fa-solid fa-triangle-exclamation"></i> إعادة ضبط خطيرة - للأدمن فقط</button>` : ''}
           </div>
         </div>
@@ -1314,13 +1411,14 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
       if(confirmText !== 'RESET') return toast("تم إلغاء العملية");
 
       toast("جاري حفظ نسخة احتياطية إجبارية...");
-      const backupId = Date.now();
-      db.ref('backups/' + currentFirebaseUser.uid + '/' + backupId).set(data).then(() => {
+      createSafetyBackup('pre-reset').then(() => {
+        addActivityLog('reset', 'Full data reset by Super Admin');
         data = defaults();
+        normalizeData();
         saveData();
         render();
         toast('تمت إعادة الضبط بنجاح');
-      }).catch(err => {
+      }).catch(() => {
         toast("تم إلغاء إعادة الضبط لأن النسخ الاحتياطي فشل", "error");
       });
     }
@@ -1346,17 +1444,42 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         try {
           const imported = JSON.parse(reader.result);
 
-          if(!imported.deals || !imported.contacts) {
+          if(!imported.contacts && !imported.deals) {
             throw new Error('bad file');
           }
 
-          data = imported;
+          // Backup before import
+          if(currentFirebaseUser) {
+            const backupId = Date.now();
+            db.ref('backups/' + currentFirebaseUser.uid + '/' + backupId).set({
+              ...data, createdAt: backupId, createdBy: currentFirebaseUser.email,
+              reason: 'pre-import-json', contactsCount: (data.contacts||[]).length
+            }).catch(() => {});
+          }
+
+          // MERGE: preserve existing arrays not in import
+          const mergeArray = (existing, incoming, keyField='id') => {
+            if(!Array.isArray(incoming) || !incoming.length) return existing;
+            const map = {};
+            (existing || []).forEach(r => { if(r[keyField]) map[r[keyField]] = r; });
+            incoming.forEach(r => { if(r[keyField]) map[r[keyField]] = { ...map[r[keyField]], ...r }; else map[uid()] = r; });
+            return Object.values(map);
+          };
+
+          const arrayKeys = ['contacts','deals','products','reps','returns','collections','inventory','inventoryMovements','followups','interactions','tickets','notifications','telesales','activityLogs'];
+          arrayKeys.forEach(k => {
+            if(imported[k]) data[k] = mergeArray(data[k], imported[k]);
+          });
+          data.meta = { ...data.meta, ...(imported.meta || {}) };
+
+          addActivityLog('import', 'JSON import merged');
+          normalizeData();
           saveData();
           render();
-          toast('تم الاستيراد بنجاح');
+          toast('تم الدمج بنجاح — لم يُحذف أي بيانات قديمة');
 
         } catch {
-          toast('ملف غير صحيح', 'error');
+          toast('ملف JSON غير صحيح', 'error');
         }
 
         event.target.value = '';
@@ -1395,45 +1518,40 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
         try {
           const workbook = XLSX.read(e.target.result, { type: "array" });
 
-          let imported = {
-            contacts: data.contacts || [],
-            deals: data.deals || [],
-            products: data.products || [],
-            reps: data.reps || [],
-            notifications: data.notifications || [],
-            meta: data.meta || {}
+          // Backup before import
+          if(currentFirebaseUser) {
+            const backupId = Date.now();
+            db.ref('backups/' + currentFirebaseUser.uid + '/' + backupId).set({
+              ...data, createdAt: backupId, createdBy: currentFirebaseUser.email,
+              reason: 'pre-import-excel', contactsCount: (data.contacts||[]).length
+            }).catch(() => {});
+          }
+
+          const mergeArray = (existing, incoming, keyField='id') => {
+            if(!Array.isArray(incoming) || !incoming.length) return existing;
+            const map = {};
+            (existing || []).forEach(r => { if(r[keyField]) map[r[keyField]] = r; });
+            incoming.forEach(r => { if(r[keyField]) map[r[keyField]] = { ...map[r[keyField]], ...r }; else { const newId = uid(); map[newId] = { id: newId, ...r }; } });
+            return Object.values(map);
           };
 
           workbook.SheetNames.forEach(sheetName => {
             const cleanName = sheetName.trim().toLowerCase();
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-              defval: ""
-            });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+            const fixedRows = rows.map(row => ({ id: row.id || uid(), ...row }));
 
-            const fixedRows = rows.map(row => ({
-              id: row.id || uid(),
-              ...row
-            }));
-
-            if(cleanName === "contacts" || cleanName === "customers" || cleanName === "lead" || cleanName === "clients" || cleanName === "العملاء"){
-              imported.contacts = fixedRows;
-            }
-
-            if(cleanName === "deals" || cleanName === "sales" || cleanName === "الصفقات"){
-              imported.deals = fixedRows;
-            }
-
-            if(cleanName === "products" || cleanName === "items" || cleanName === "المنتجات"){
-              imported.products = fixedRows;
-            }
-
-            if(cleanName === "reps" || cleanName === "sales reps" || cleanName === "المندوبين"){
-              imported.reps = fixedRows;
+            if(["contacts","customers","lead","clients","العملاء"].includes(cleanName)){
+              data.contacts = mergeArray(data.contacts, fixedRows);
+            } else if(["deals","sales","الصفقات"].includes(cleanName)){
+              data.deals = mergeArray(data.deals, fixedRows);
+            } else if(["products","items","المنتجات"].includes(cleanName)){
+              data.products = mergeArray(data.products, fixedRows);
+            } else if(["reps","sales reps","المندوبين"].includes(cleanName)){
+              data.reps = mergeArray(data.reps, fixedRows);
             }
           });
 
-          data = imported;
-
+          addActivityLog('import', 'Excel import merged');
           normalizeData();
           saveData();
 
@@ -1441,7 +1559,7 @@ ${type === 'contacts' ? `<button class="btn btn-green !p-2" onclick="openWhatsAp
           buildNav();
           render();
 
-          toast("تم استيراد Excel وظهرت البيانات");
+          toast("تم دمج Excel — البيانات القديمة محفوظة");
 
         } catch(err) {
           console.error(err);
@@ -1512,14 +1630,29 @@ function aiHTML(){
 }
 
 function makeMeAdmin(){
+  if(!isSuperAdmin()){
+    toast('هذه الوظيفة للـ Super Admin فقط', 'error');
+    return;
+  }
   if(!currentFirebaseUser) return;
   db.ref('users/' + currentFirebaseUser.uid).update({ role:'admin' }).then(()=>{ currentRole='admin'; render(); toast('تم تحويل الحساب إلى Admin'); });
 }
 
 function manualBackup(){
   if(!currentFirebaseUser) return;
-  data.meta ||= {}; data.meta.lastBackup = Date.now();
-  db.ref('backups/' + currentFirebaseUser.uid + '/' + data.meta.lastBackup).set(data).then(()=>toast('تم إنشاء Backup على Firebase')).catch(()=>toast('تعذر حفظ Backup', 'error'));
+  const ts = Date.now();
+  data.meta ||= {};
+  data.meta.lastBackup = ts;
+  const backupData = {
+    ...data,
+    createdAt: ts,
+    createdBy: currentFirebaseUser.email,
+    reason: 'manual',
+    contactsCount: (data.contacts || []).length
+  };
+  db.ref('backups/' + currentFirebaseUser.uid + '/' + ts).set(backupData)
+    .then(()=> toast(`✅ Backup محفوظ — ${(data.contacts||[]).length} عميل`))
+    .catch(()=>toast('تعذر حفظ Backup', 'error'));
 }
 
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; });
@@ -1528,7 +1661,7 @@ function installPWA(){
   else toast('من الموبايل استخدم Add to Home Screen من المتصفح');
 }
 
-setInterval(()=>{ if(currentFirebaseUser) saveData(); }, 300000);
+setInterval(()=>{ if(currentFirebaseUser && firebaseLoaded) saveData(true); }, 300000);
 
 function safeJS(value){ return String(value ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' '); }
 
